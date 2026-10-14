@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a2a1a">
+<title>捉红枪 · 好友对战</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --card-w: clamp(32px, 5vw, 56px);
+    --card-h: clamp(48px, 7.5vw, 84px);
+    --card-font: clamp(12px, 1.6vw, 17px);
+    --card-suit-font: clamp(14px, 1.9vw, 20px);
+    --card-radius: clamp(4px, 0.7vw, 8px);
+    --gap: clamp(3px, 0.7vw, 8px);
+    --pad: clamp(6px, 1vw, 12px);
+    --radius: clamp(6px, 1vw, 10px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: radial-gradient(circle at 50% 40%, #1a5c3a 0%, #0d3a22 60%, #061a10 100%);
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .hidden { display: none !important; }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+    gap: 14px;
+    z-index: 10;
+    overflow-y: auto;
+  }
+  .screen h1 { font-size: clamp(24px, 4vw, 38px); text-align: center; margin-bottom: 4px; text-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+  .screen h2 { font-size: clamp(16px, 2.5vw, 22px); text-align: center; opacity: 0.9; }
+  .screen p { font-size: clamp(12px, 1.5vw, 14px); opacity: 0.75; text-align: center; line-height: 1.6; }
+  .screen input {
+    width: min(280px, 80vw);
+    padding: 14px 16px;
+    font-size: clamp(18px, 2.4vw, 22px);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: var(--radius);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    text-align: center;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    font-family: inherit;
+    font-weight: bold;
+  }
+  .screen input:focus { outline: none; border-color: #f1c40f; }
+  .screen input::placeholder { letter-spacing: 2px; font-weight: normal; font-size: 14px; }
+  .screen .btn-col { display: flex; flex-direction: column; gap: 10px; width: min(280px, 80vw); }
+  .screen button {
+    padding: 14px 24px;
+    font-size: clamp(14px, 1.8vw, 16px);
+    font-family: inherit; font-weight: bold;
+    border: none; border-radius: var(--radius);
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
+  }
+  .screen button:active { transform: scale(0.97); }
+  .screen button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .screen button.primary { background: linear-gradient(180deg, #e67e22, #d35400); color: #fff; }
+  .screen button.secondary { background: linear-gradient(180deg, #34495e, #2c3e50); color: #fff; }
+  .screen button.ghost { background: rgba(255,255,255,0.1); color: #fff; }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .status-dot.ok { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+  .status-dot.wait { background: #f1c40f; animation: blink 1s infinite; }
+  .status-dot.err { background: #e74c3c; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .room-code-box {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 22px;
+    background: rgba(0,0,0,0.4);
+    border-radius: var(--radius);
+    font-size: clamp(24px, 3.5vw, 32px);
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: #f1c40f;
+    margin: 4px 0;
+    font-family: "Courier New", monospace;
+  }
+  .room-code-box button {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border-radius: 4px;
+    border: none; cursor: pointer;
+    letter-spacing: normal;
+  }
+
+  .player-list { display: flex; flex-direction: column; gap: 6px; width: min(340px, 88vw); }
+  .player-item {
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.3);
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: clamp(13px, 1.6vw, 15px);
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .player-item.me { border-color: #f1c40f; }
+  .player-item.empty { opacity: 0.4; font-style: italic; }
+
+  .app {
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    padding:
+      calc(var(--pad) + var(--safe-top))
+      calc(var(--pad) + var(--safe-right))
+      calc(var(--pad) + var(--safe-bottom))
+      calc(var(--pad) + var(--safe-left));
+    gap: var(--gap);
+    overflow: hidden;
+  }
+  .opponents { display: flex; gap: var(--gap); flex-shrink: 0; }
+  .opp {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center;
+    gap: clamp(4px, 0.8vw, 8px);
+    padding: clamp(4px, 0.8vw, 8px) clamp(6px, 1vw, 12px);
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+    font-size: clamp(11px, 1.4vw, 14px);
+  }
+  .opp.active { border-color: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.45); }
+  .opp.offline { opacity: 0.4; }
+  .opp.xuan {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.18);
+    box-shadow: 0 0 16px rgba(231, 76, 60, 0.75);
+    animation: xuanPulse 0.6s ease;
+  }
+  .opp.xuan .avatar { background: linear-gradient(135deg, #c0392b, #e74c3c); box-shadow: 0 0 10px rgba(231, 76, 60, 0.9); }
+  .opp.xuan .name::after { content: ' 宣'; color: #ff8a80; font-weight: bold; padding: 0 4px; border-radius: 4px; background: rgba(231, 76, 60, 0.35); margin-left: 4px; font-size: 0.85em; }
+  .opp.fan {
+    border-color: #9b59b6;
+    background: rgba(155, 89, 182, 0.18);
+    box-shadow: 0 0 16px rgba(155, 89, 182, 0.75);
+    animation: fanPulse 0.6s ease;
+  }
+  .opp.fan .avatar { background: linear-gradient(135deg, #8e44ad, #9b59b6); box-shadow: 0 0 10px rgba(155, 89, 182, 0.9); }
+  .opp.fan .name::after { content: ' 反宣'; color: #d7bde2; font-weight: bold; padding: 0 4px; border-radius: 4px; background: rgba(155, 89, 182, 0.35); margin-left: 4px; font-size: 0.85em; }
+  @keyframes xuanPulse { 0% { box-shadow: 0 0 0 rgba(231,76,60,0); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(231,76,60,1); transform: scale(1.03); } 100% { box-shadow: 0 0 16px rgba(231,76,60,0.75); transform: scale(1); } }
+  @keyframes fanPulse { 0% { box-shadow: 0 0 0 rgba(155,89,182,0); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(155,89,182,1); transform: scale(1.03); } 100% { box-shadow: 0 0 16px rgba(155,89,182,0.75); transform: scale(1); } }
+  .opp .avatar {
+    width: clamp(24px, 3.5vw, 36px);
+    height: clamp(24px, 3.5vw, 36px);
+    border-radius: 50%;
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(11px, 1.5vw, 15px); font-weight: bold; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .opp .info { min-width: 0; flex: 1; }
+  .opp .name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; }
+  .opp .count { opacity: 0.7; font-size: 0.85em; line-height: 1.2; }
+  .opp .badge { font-size: 0.75em; padding: 1px 6px; border-radius: 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+  .opp .badge.red { background: #c0392b; color: #fff; }
+  .opp .badge.black { background: #2c3e50; color: #fff; }
+  .opp .badge:empty { display: none; }
+  .opp .score { font-size: 0.75em; margin-left: 4px; font-weight: bold; }
+  .opp .score.positive { color: #2ecc71; }
+  .opp .score.negative { color: #e74c3c; }
+
+  .table-area { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap); position: relative; }
+  .mult-badge {
+    position: absolute; top: 4px; right: 4px;
+    font-size: clamp(11px, 1.4vw, 14px);
+    font-weight: bold;
+    padding: clamp(3px, 0.6vw, 6px) clamp(8px, 1.2vw, 12px);
+    background: rgba(155, 89, 182, 0.35);
+    border: 1px solid rgba(155, 89, 182, 0.7);
+    color: #d7bde2;
+    border-radius: 999px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .mult-badge.show { opacity: 1; }
+  .played-area {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 2px; max-width: 100%;
+    padding: 4px 8px;
+    min-height: calc(var(--card-h) * 0.8);
+  }
+  .played-area .empty { opacity: 0.35; font-size: clamp(12px, 1.6vw, 15px); letter-spacing: 2px; }
+  .played-label { font-size: clamp(11px, 1.4vw, 13px); opacity: 0.75; margin-top: 2px; text-align: center; }
+  .status {
+    font-size: clamp(12px, 1.5vw, 15px);
+    padding: clamp(4px, 0.8vw, 6px) clamp(12px, 2vw, 20px);
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 999px;
+    text-align: center;
+    max-width: 90%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background 0.2s, color 0.2s;
+  }
+  .status.highlight { background: rgba(241,196,15,0.25); color: #f1c40f; font-weight: bold; }
+  .status.hint { background: rgba(52,152,219,0.35); color: #85c1e9; font-weight: bold; }
+  .status.error { background: rgba(231,76,60,0.35); color: #ec7063; font-weight: bold; }
+
+  .my-area {
+    flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  }
+  .my-area.xuan {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.12);
+    box-shadow: 0 0 16px rgba(231, 76, 60, 0.6);
+    animation: xuanPulse 0.6s ease;
+  }
+  .my-area.fan {
+    border-color: #9b59b6;
+    background: rgba(155, 89, 182, 0.12);
+    box-shadow: 0 0 16px rgba(155, 89, 182, 0.6);
+    animation: fanPulse 0.6s ease;
+  }
+  .my-label {
+    font-size: clamp(11px, 1.4vw, 13px);
+    opacity: 0.85;
+    padding: 0 4px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .my-label .badge { font-size: 0.85em; padding: 1px 6px; border-radius: 8px; font-weight: bold; }
+  .my-label .badge.red { background: #c0392b; }
+  .my-label .badge.black { background: #2c3e50; }
+  .my-label .badge:empty { display: none; }
+  .my-label .score { font-weight: bold; margin-left: 6px; }
+  .my-label .score.positive { color: #2ecc71; }
+  .my-label .score.negative { color: #e74c3c; }
+  .my-label .xuan-tag {
+    color: #ff8a80; font-weight: bold;
+    padding: 1px 6px; border-radius: 4px;
+    background: rgba(231, 76, 60, 0.35);
+    display: none; font-size: 0.9em;
+  }
+  .my-label .fan-tag {
+    color: #d7bde2; font-weight: bold;
+    padding: 1px 6px; border-radius: 4px;
+    background: rgba(155, 89, 182, 0.35);
+    display: none; font-size: 0.9em;
+  }
+  .my-area.xuan .my-label .xuan-tag { display: inline-block; }
+  .my-area.fan .my-label .fan-tag { display: inline-block; }
+
+  .hand {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 2px; padding: 8px 2px 2px;
+    max-height: 26vh;
+    overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: thin;
+  }
+  .hand::-webkit-scrollbar { width: 4px; }
+  .hand::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+  .card {
+    width: var(--card-w); height: var(--card-h);
+    background: linear-gradient(160deg, #ffffff 0%, #f3f3f3 100%);
+    color: #222;
+    border-radius: var(--card-radius);
+    border: 1px solid #999;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-weight: bold; cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+    position: relative; flex-shrink: 0; padding: 2px;
+    touch-action: manipulation;
+  }
+  .card .rank { font-size: var(--card-font); line-height: 1; }
+  .card .suit { font-size: var(--card-suit-font); line-height: 1; margin-top: 2px; }
+  .card.red { color: #c0392b; }
+  .card.black { color: #1a1a1a; }
+  .card.selected {
+    transform: translateY(calc(var(--card-h) * -0.18));
+    box-shadow: 0 -3px 10px rgba(241, 196, 15, 0.8);
+    border-color: #f1c40f; border-width: 2px;
+  }
+  .card.hinted {
+    transform: translateY(calc(var(--card-h) * -0.18));
+    box-shadow: 0 -3px 10px rgba(52, 152, 219, 0.9);
+    border-color: #3498db; border-width: 2px;
+  }
+  .card.small { width: calc(var(--card-w) * 0.82); height: calc(var(--card-h) * 0.82); cursor: default; padding: 1px; }
+  .card.small .rank { font-size: calc(var(--card-font) * 0.85); }
+  .card.small .suit { font-size: calc(var(--card-suit-font) * 0.85); margin-top: 1px; }
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover:not(.small):not(.selected):not(.hinted) {
+      transform: translateY(calc(var(--card-h) * -0.08));
+    }
+  }
+
+  .controls { display: flex; gap: var(--gap); justify-content: center; flex-shrink: 0; padding-top: 2px; }
+  button.ctrl {
+    flex: 1; max-width: 130px;
+    padding: clamp(8px, 1.2vw, 12px) clamp(8px, 1.5vw, 20px);
+    font-size: clamp(12px, 1.5vw, 15px);
+    font-family: inherit; font-weight: bold;
+    border: none; border-radius: var(--radius);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.1s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  button.ctrl:active:not(:disabled) { transform: scale(0.96); }
+  button.ctrl:disabled { opacity: 0.35; cursor: not-allowed; }
+  button.ctrl.primary { background: linear-gradient(180deg, #e67e22, #d35400); color: #fff; }
+  button.ctrl.secondary { background: linear-gradient(180deg, #34495e, #2c3e50); color: #fff; }
+  button.ctrl.hint-btn { background: linear-gradient(180deg, #3498db, #2980b9); color: #fff; }
+  button.ctrl.ghost { background: rgba(255,255,255,0.1); color: #fff; }
+
+  .log-panel {
+    position: fixed; right: calc(8px + var(--safe-right)); bottom: calc(80px + var(--safe-bottom));
+    width: 200px; max-height: 150px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px; line-height: 1.6;
+    z-index: 40; pointer-events: none;
+    scrollbar-width: thin;
+  }
+  .log-panel p { margin: 1px 0; }
+  .log-panel::-webkit-scrollbar { width: 3px; }
+  .log-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+  @media (max-width: 900px) { .log-panel { display: none; } }
+
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal .box {
+    background: #fff; color: #222;
+    padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 40px);
+    border-radius: 14px;
+    text-align: center;
+    max-width: min(92vw, 420px);
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal .box h3 { font-size: clamp(17px, 2.2vw, 22px); margin-bottom: 14px; }
+  .modal .box p { font-size: clamp(13px, 1.6vw, 15px); line-height: 1.7; margin-bottom: 20px; white-space: pre-line; }
+  .modal .box .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .modal .box button {
+    margin: 0; min-width: 80px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-family: inherit; font-weight: bold;
+    border: none; border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .modal .box button.primary { background: linear-gradient(180deg, #e67e22, #d35400); color: #fff; }
+  .modal .box button.secondary { background: linear-gradient(180deg, #34495e, #2c3e50); color: #fff; }
+
+  .toast {
+    position: fixed;
+    top: calc(12px + var(--safe-top));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    z-index: 200;
+    animation: toastIn 0.2s ease;
+    max-width: 92vw;
+    line-height: 1.4;
+    text-align: center;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  @media (max-height: 500px) and (orientation: landscape) {
+    :root { --card-w: clamp(28px, 4vw, 42px); --card-h: clamp(40px, 6vw, 60px); }
+    .opponents { position: absolute; top: 4px; left: 4px; right: 4px; z-index: 10; }
+    .table-area { padding-top: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen" id="lobby-screen">
+  <h1>🃏 捉红枪</h1>
+  <p>好友对战 · 4 人</p>
+  <div class="btn-col" style="margin-top: 8px;">
+    <button class="primary" id="btn-create" onclick="createRoom()">创建房间</button>
+    <button class="secondary" onclick="showJoinInput()">加入房间</button>
+  </div>
+  <div class="hidden" id="join-input-box" style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+    <input type="text" id="room-code-input" placeholder="输入 6 位房间码" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="primary" onclick="joinRoom()" style="width:min(280px,80vw);" id="btn-join">加入</button>
+  </div>
+  <div id="net-status" style="font-size:12px;opacity:0.6;margin-top:10px;"><span class="status-dot wait"></span>正在连接信令服务器…</div>
+</div>
+
+<div class="screen hidden" id="waiting-screen">
+  <h2>房间码</h2>
+  <div class="room-code-box">
+    <span id="room-code-display">------</span>
+    <button onclick="copyRoomCode()">复制</button>
+  </div>
+  <p style="margin-top:-4px;">把房间码发给朋友，让 ta 点「加入房间」</p>
+  <div class="player-list" id="player-list" style="margin-top: 8px;"></div>
+  <p id="waiting-status" style="margin-top:4px;">等待玩家加入…</p>
+  <button class="primary hidden" id="btn-start" onclick="hostStartGame()" style="width:min(280px,80vw);">开始游戏</button>
+</div>
+
+<div class="app hidden" id="game-screen">
+  <div class="opponents" id="opponents">
+    <div class="opp" data-pid="1"><div class="avatar">A</div><div class="info"><div class="name">等待…</div><div class="count">—</div></div><div class="badge"></div></div>
+    <div class="opp" data-pid="2"><div class="avatar">B</div><div class="info"><div class="name">等待…</div><div class="count">—</div></div><div class="badge"></div></div>
+    <div class="opp" data-pid="3"><div class="avatar">C</div><div class="info"><div class="name">等待…</div><div class="count">—</div></div><div class="badge"></div></div>
+  </div>
+  <div class="table-area">
+    <div class="mult-badge" id="mult-badge">×1</div>
+    <div class="played-area" id="played"><span class="empty">等待出牌…</span></div>
+    <div class="status" id="status">准备中…</div>
+  </div>
+  <div class="my-area" id="my-area">
+    <div class="my-label">
+      <span id="my-name">你</span>
+      <span id="my-count">13 张</span>
+      <span class="badge" id="my-badge"></span>
+      <span class="score" id="my-score"></span>
+      <span class="xuan-tag">宣</span>
+      <span class="fan-tag">反宣</span>
+    </div>
+    <div class="hand" id="hand"></div>
+  </div>
+  <div class="controls">
+    <button class="ctrl primary" id="btn-play" disabled>出牌</button>
+    <button class="ctrl hint-btn" id="btn-hint" disabled>提示</button>
+    <button class="ctrl secondary" id="btn-pass" disabled>过牌</button>
+    <button class="ctrl ghost" id="btn-leave">退出</button>
+  </div>
+</div>
+
+<div class="log-panel hidden" id="log"></div>
+
+<div class="modal hidden" id="modal">
+  <div class="box">
+    <h3 id="modal-title"></h3>
+    <p id="modal-text"></p>
+    <div class="btn-row" id="modal-buttons"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 常量
+// ============================================================
+const SUITS = ['♠', '♥', '♣', '♦'];
+const RANKS = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+const JOKER_SMALL = '小王', JOKER_BIG = '大王';
+const RANK_VALUE = {};
+RANKS.forEach((r, i) => RANK_VALUE[r] = i);
+RANK_VALUE[JOKER_SMALL] = RANKS.length;
+RANK_VALUE[JOKER_BIG] = RANKS.length + 1;
+const A_VALUE = RANK_VALUE['A'];
+const HT = { SINGLE: '单张', PAIR: '对子', TRIPLE: '三同张', QUAD: '四同张', STRAIGHT: '顺子', CONSECUTIVE_PAIRS: '连对' };
+
+// PeerJS 配置：加 STUN 提升 NAT 穿透
+const PEER_CONFIG = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+    ]
+  }
+};
+
+// ============================================================
+// 全局
+// ============================================================
+let role = null;
+let myPid = 0;
+let gameMode = 'standard';
+let viewState = null;
+let selected = new Set();
+let hintedCards = new Set();
+let hintIndex = 0;
+let hintCacheKey = null;
+
+function modeLabel(m) { return { standard: '标准', tianxuan: '天宣', youxuan: '有宣必跟' }[m] || '标准'; }
+
+// ============================================================
+// 牌型判断
+// ============================================================
+function getHandType(cards) {
+  if (!cards || cards.length === 0) return null;
+  const n = cards.length;
+  const values = cards.map(c => c.value).sort((a, b) => a - b);
+  if (n === 1) return { type: HT.SINGLE, value: values[0], length: 1 };
+  if (n === 2 && values[0] === values[1]) return { type: HT.PAIR, value: values[0], length: 2 };
+  if (n === 3 && values.every(v => v === values[0])) return { type: HT.TRIPLE, value: values[0], length: 3 };
+  if (n === 4 && values.every(v => v === values[0])) return { type: HT.QUAD, value: values[0], length: 4 };
+  if (n >= 5 && values[n-1] <= A_VALUE) {
+    let ok = true;
+    for (let i = 0; i < n - 1; i++) if (values[i] + 1 !== values[i+1]) { ok = false; break; }
+    if (ok) return { type: HT.STRAIGHT, value: values[n-1], length: n };
+  }
+  if (n >= 6 && n % 2 === 0) {
+    const cnt = {};
+    for (const v of values) cnt[v] = (cnt[v] || 0) + 1;
+    const keys = Object.keys(cnt).map(Number).sort((a,b) => a-b);
+    if (keys.every(k => cnt[k] === 2) && keys[keys.length-1] <= A_VALUE) {
+      let ok = true;
+      for (let i = 0; i < keys.length - 1; i++) if (keys[i] + 1 !== keys[i+1]) { ok = false; break; }
+      if (ok) return { type: HT.CONSECUTIVE_PAIRS, value: keys[keys.length-1], length: n };
+    }
+  }
+  return null;
+}
+function canBeat(a, b) {
+  if (!b) return true;
+  if (a.type === HT.QUAD && b.type !== HT.QUAD) return true;
+  if (a.type !== b.type) return false;
+  if (a.length !== b.length) return false;
+  return a.value > b.value;
+}
+function cardLabel(c) { if (c.rank === JOKER_SMALL || c.rank === JOKER_BIG) return c.rank; return c.suit + c.rank; }
+function isRed(c) { return c.suit === '♥' || c.suit === '♦'; }
+function isRedAce(c) { return c.rank === 'A' && isRed(c); }
+function isBlackAce(c) { return c.rank === 'A' && !isRed(c); }
+
+function findAllStraights(hand, length) {
+  const byValue = {};
+  for (const c of hand) if (c.value <= A_VALUE) (byValue[c.value] = byValue[c.value] || []).push(c);
+  const vals = Object.keys(byValue).map(Number).sort((a,b) => a-b);
+  const result = [];
+  const minLen = length || 5;
+  for (let i = 0; i < vals.length; i++) {
+    for (let j = i + minLen; j <= vals.length; j++) {
+      const seq = vals.slice(i, j);
+      if (seq[seq.length-1] - seq[0] !== seq.length - 1) continue;
+      if (length && seq.length !== length) continue;
+      result.push(seq.map(v => byValue[v][0]));
+    }
+  }
+  return result;
+}
+function findAllConsecutivePairs(hand, length) {
+  const byValue = {};
+  for (const c of hand) if (c.value <= A_VALUE) (byValue[c.value] = byValue[c.value] || []).push(c);
+  const vals = Object.keys(byValue).map(Number).filter(v => byValue[v].length >= 2).sort((a,b) => a-b);
+  const result = [];
+  const minPairs = length ? length / 2 : 3;
+  for (let i = 0; i < vals.length; i++) {
+    for (let j = i + minPairs; j <= vals.length; j++) {
+      const seq = vals.slice(i, j);
+      if (seq[seq.length-1] - seq[0] !== seq.length - 1) continue;
+      const cards = [];
+      for (const v of seq) cards.push(...byValue[v].slice(0, 2));
+      if (length && cards.length !== length) continue;
+      result.push(cards);
+    }
+  }
+  return result;
+}
+function findPlays(hand, lastPlay) {
+  const plays = [];
+  const byValue = {};
+  for (const c of hand) (byValue[c.value] = byValue[c.value] || []).push(c);
+  if (lastPlay.type === HT.SINGLE) {
+    for (const c of hand) if (c.value > lastPlay.value) plays.push([c]);
+  } else if (lastPlay.type === HT.PAIR) {
+    for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 2) plays.push(byValue[v].slice(0, 2));
+  } else if (lastPlay.type === HT.TRIPLE) {
+    for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 3) plays.push(byValue[v].slice(0, 3));
+  } else if (lastPlay.type === HT.QUAD) {
+    for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 4) plays.push(byValue[v].slice(0, 4));
+  } else if (lastPlay.type === HT.STRAIGHT) {
+    for (const seq of findAllStraights(hand, lastPlay.length)) {
+      const ht = getHandType(seq);
+      if (ht && ht.value > lastPlay.value) plays.push(seq);
+    }
+  } else if (lastPlay.type === HT.CONSECUTIVE_PAIRS) {
+    for (const seq of findAllConsecutivePairs(hand, lastPlay.length)) {
+      const ht = getHandType(seq);
+      if (ht && ht.value > lastPlay.value) plays.push(seq);
+    }
+  }
+  if (lastPlay.type !== HT.QUAD) {
+    for (const v in byValue) if (byValue[v].length >= 4) plays.push(byValue[v].slice(0, 4));
+  }
+  return plays;
+}
+
+// ============================================================
+// 游戏引擎（房主端）
+// ============================================================
+class GameEngine {
+  constructor(players) {
+    this.players = players.map(p => ({
+      pid: p.pid, name: p.name,
+      cards: [], cardCount: 0,
+      rank: null, redAces: 0, blackAces: 0,
+      saidXuan: false, saidFan: false, doubleRed: false,
+      score: 0, offline: false,
+    }));
+    this.lastPlay = null;
+    this.lastPlayer = null;
+    this.passes = 0;
+    this.current = 0;
+    this.finishedOrder = [];
+    this.gameOver = false;
+    this.phase = 'idle';
+    this.xuanMultiplier = 1;
+    this.roundNum = 0;
+    this.logs = [];
+    this.pendingModal = null;
+  }
+  log(msg) { this.logs.push(msg); if (this.logs.length > 40) this.logs.shift(); }
+  reset() {
+    this.lastPlay = null; this.lastPlayer = null; this.passes = 0;
+    this.finishedOrder = []; this.gameOver = false;
+    this.phase = 'idle'; this.xuanMultiplier = 1; this.pendingModal = null;
+  }
+  deal() {
+    const deck = this._makeDeck(); this._shuffle(deck);
+    for (let i = 0; i < 4; i++) this.players[i].cards = deck.slice(i * 13, (i + 1) * 13);
+    const bottom = deck.slice(52);
+    let h4 = null;
+    for (const p of this.players) if (p.cards.some(c => c.suit === '♥' && c.rank === '4')) { h4 = p; break; }
+    (h4 || this.players[0]).cards.push(...bottom);
+    for (const p of this.players) {
+      p.cards.sort((a, b) => a.value - b.value || a.suit.localeCompare(b.suit));
+      p.redAces = p.cards.filter(isRedAce).length;
+      p.blackAces = p.cards.filter(isBlackAce).length;
+      p.rank = null; p.saidXuan = false; p.saidFan = false;
+      p.doubleRed = (p.redAces === 2); p.cardCount = p.cards.length;
+    }
+    this.reset();
+  }
+  _makeDeck() {
+    const deck = [];
+    for (const s of SUITS) for (const r of RANKS) deck.push({ suit: s, rank: r, value: RANK_VALUE[r] });
+    deck.push({ suit: '', rank: JOKER_SMALL, value: RANK_VALUE[JOKER_SMALL] });
+    deck.push({ suit: '', rank: JOKER_BIG, value: RANK_VALUE[JOKER_BIG] });
+    return deck;
+  }
+  _shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  applyPlay(pid, cardList) {
+    const p = this.players.find(x => x.pid === pid);
+    if (!p || this.current !== pid) return { ok: false, msg: '未轮到你' };
+    const ht = getHandType(cardList);
+    if (!ht) return { ok: false, msg: '非法牌型' };
+    if (this.lastPlay && !canBeat(ht, this.lastPlay)) return { ok: false, msg: '压不过' };
+    const set = new Set(cardList);
+    p.cards = p.cards.filter(c => !set.has(c));
+    p.cardCount = p.cards.length;
+    this.lastPlay = { cards: cardList, ...ht, playerPid: pid };
+    this.lastPlayer = pid; this.passes = 0;
+    this.log(`${p.name} 出牌：${cardList.map(cardLabel).join(' ')} [${ht.type}]`);
+    if (p.cards.length === 0) this._finishPlayer(pid);
+    return { ok: true };
+  }
+  applyPass(pid) {
+    const p = this.players.find(x => x.pid === pid);
+    if (!p || this.current !== pid) return { ok: false, msg: '未轮到你' };
+    if (!this.lastPlay) return { ok: false, msg: '首出不能过' };
+    this.passes++;
+    this.log(`${p.name} 过牌`);
+    return { ok: true };
+  }
+  _finishPlayer(pid) {
+    const p = this.players.find(x => x.pid === pid);
+    p.rank = this.finishedOrder.length + 1;
+    this.finishedOrder.push(pid);
+    this.log(`🏆 ${p.name} 第 ${p.rank} 名`);
+    if (this.finishedOrder.length >= 3) {
+      for (const q of this.players) if (q.rank === null) q.rank = 4;
+      this._endRound();
+    }
+  }
+  advance() {
+    if (this.gameOver) return;
+    let next = this.current;
+    for (let i = 0; i < 4; i++) {
+      next = (next + 1) % 4;
+      if (this.players[next].rank === null) break;
+    }
+    this.current = next;
+    const active = this.players.filter(p => p.rank === null);
+    if (this.lastPlay && this.passes >= active.length - 1) {
+      if (this.lastPlayer !== null) {
+        const lp = this.players.find(p => p.pid === this.lastPlayer);
+        if (lp && lp.rank === null) this.current = this.lastPlayer;
+      }
+      this.lastPlay = null; this.passes = 0;
+      const cp = this.players.find(p => p.pid === this.current);
+      this.log(`--- 新一轮，${cp.name} 先出 ---`);
+    }
+  }
+  _endRound() {
+    this.gameOver = true; this.phase = 'over';
+    const solo = this.players.find(p => p.redAces === 2);
+    let base = 0, winners = [], losers = [], special = '';
+    if (solo && solo.saidXuan) {
+      if (solo.rank === 1) { base = 15; winners = [solo]; losers = this.players.filter(p => p !== solo); special = '独宣成功（拾零）'; }
+      else { base = 15; winners = this.players.filter(p => p !== solo); losers = [solo]; special = '独宣失败'; }
+    } else if (solo) {
+      if (solo.rank === 1) { base = 15; winners = [solo]; losers = this.players.filter(p => p !== solo); special = '拾零'; }
+      else if (solo.rank === 4) { base = 15; winners = this.players.filter(p => p !== solo); losers = [solo]; special = '被反拾零'; }
+      else { base = 0; special = '平局（独持未宣）'; }
+    } else {
+      const red = this.players.filter(p => p.redAces > 0);
+      const black = this.players.filter(p => p.redAces === 0);
+      const redRanks = red.map(p => p.rank).sort((a,b)=>a-b);
+      const blackRanks = black.map(p => p.rank).sort((a,b)=>a-b);
+      if (redRanks[0] === 1 && (redRanks[1] === 2 || redRanks[1] === 3)) { base = 5; winners = red; losers = black; special = '伍零（红A方）'; }
+      else if (blackRanks[0] === 1 && (blackRanks[1] === 2 || blackRanks[1] === 3)) { base = 5; winners = black; losers = red; special = '伍零（黑A方）'; }
+      else { base = 0; special = '平局'; }
+    }
+    const total = base * this.xuanMultiplier;
+    this.roundResult = { special, base, total, winners: winners.map(p=>p.pid), losers: losers.map(p=>p.pid) };
+    if (base === 0) this.log(`🏁 ${special}，不计分`);
+    else {
+      for (const p of winners) p.score += total;
+      for (const p of losers) p.score -= total;
+      this.log(`🏁 ${special} | +${total}/-${total}`);
+    }
+  }
+  aiChoose(p) { return this.lastPlay ? this._aiFollow(p) : this._aiLead(p); }
+  _aiLead(p) {
+    const hand = p.cards;
+    const byValue = {};
+    for (const c of hand) (byValue[c.value] = byValue[c.value] || []).push(c);
+    if (hand.length <= 6) {
+      const straights = findAllStraights(hand);
+      straights.sort((a, b) => b.length - a.length);
+      if (straights.length && straights[0].length >= hand.length - 1) return straights[0];
+      const cpairs = findAllConsecutivePairs(hand);
+      cpairs.sort((a, b) => b.length - a.length);
+      if (cpairs.length && cpairs[0].length >= hand.length - 1) return cpairs[0];
+      const triples = [];
+      for (const v in byValue) if (byValue[v].length >= 3) triples.push(byValue[v].slice(0, 3));
+      triples.sort((a, b) => a[0].value - b[0].value);
+      if (triples.length && triples[0].length >= hand.length - 1) return triples[0];
+    }
+    const straights = findAllStraights(hand);
+    if (straights.length) {
+      straights.sort((a, b) => a.length - b.length || a[0].value - b[0].value);
+      const shortest = straights.filter(s => s.length <= straights[0].length + 1);
+      if (shortest.length) return shortest[0];
+    }
+    const cpairs = findAllConsecutivePairs(hand);
+    if (cpairs.length) {
+      cpairs.sort((a, b) => a.length - b.length || a[0].value - b[0].value);
+      return cpairs[0];
+    }
+    const triples = [];
+    for (const v in byValue) if (byValue[v].length >= 3) triples.push(byValue[v].slice(0, 3));
+    if (triples.length) {
+      triples.sort((a, b) => a[0].value - b[0].value);
+      const small = triples.filter(t => t[0].value < A_VALUE);
+      return (small.length ? small : triples)[0];
+    }
+    const pairs = [];
+    for (const v in byValue) if (byValue[v].length >= 2) pairs.push(byValue[v].slice(0, 2));
+    if (pairs.length) {
+      pairs.sort((a, b) => a[0].value - b[0].value);
+      const small = pairs.filter(pr => pr[0].value < A_VALUE);
+      return (small.length ? small : pairs)[0];
+    }
+    return [hand[0]];
+  }
+  _aiFollow(p) {
+    const lastPlay = this.lastPlay;
+    const hand = p.cards;
+    const byValue = {};
+    for (const c of hand) (byValue[c.value] = byValue[c.value] || []).push(c);
+    const lp = this.players.find(x => x.pid === lastPlay.playerPid);
+    const meIsRed = p.redAces > 0;
+    const otherIsRed = lp ? lp.redAces > 0 : false;
+    const isTeammate = meIsRed === otherIsRed;
+    const candidates = [];
+    if (lastPlay.type === HT.SINGLE) {
+      for (const c of hand) if (c.value > lastPlay.value) candidates.push({ cards: [c], value: c.value });
+    } else if (lastPlay.type === HT.PAIR) {
+      for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 2) candidates.push({ cards: byValue[v].slice(0, 2), value: +v });
+    } else if (lastPlay.type === HT.TRIPLE) {
+      for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 3) candidates.push({ cards: byValue[v].slice(0, 3), value: +v });
+    } else if (lastPlay.type === HT.QUAD) {
+      for (const v in byValue) if (+v > lastPlay.value && byValue[v].length >= 4) candidates.push({ cards: byValue[v].slice(0, 4), value: +v });
+    } else if (lastPlay.type === HT.STRAIGHT) {
+      for (const seq of findAllStraights(hand, lastPlay.length)) {
+        const ht = getHandType(seq);
+        if (ht.value > lastPlay.value) candidates.push({ cards: seq, value: ht.value });
+      }
+    } else if (lastPlay.type === HT.CONSECUTIVE_PAIRS) {
+      for (const seq of findAllConsecutivePairs(hand, lastPlay.length)) {
+        const ht = getHandType(seq);
+        if (ht.value > lastPlay.value) candidates.push({ cards: seq, value: ht.value });
+      }
+    }
+    const bombs = [];
+    if (lastPlay.type !== HT.QUAD) {
+      for (const v in byValue) if (byValue[v].length >= 4) bombs.push({ cards: byValue[v].slice(0, 4), value: +v });
+    }
+    const isEndgame = hand.length <= 5;
+    if (isTeammate && lp && lp.rank === null && !isEndgame) return null;
+    if (candidates.length) {
+      candidates.sort((a, b) => a.value - b.value);
+      if (isEndgame) {
+        for (const cand of candidates) if (hand.length - cand.cards.length <= 1) return cand.cards;
+        return candidates[0].cards;
+      }
+      if (lastPlay.type === HT.SINGLE) {
+        const notFromPair = candidates.filter(c => byValue[c.value].length === 1 || hand.length <= 8);
+        if (notFromPair.length) {
+          const cand = notFromPair[0];
+          if (cand.value >= RANK_VALUE['2'] && lastPlay.value < RANK_VALUE['A'] && hand.length > 6) return null;
+          return cand.cards;
+        }
+      }
+      const smallest = candidates[0];
+      if (smallest.value >= RANK_VALUE['2'] && lastPlay.value < RANK_VALUE['A'] && hand.length > 6) return null;
+      return smallest.cards;
+    }
+    if (bombs.length) {
+      const enemyClose = !isTeammate && lp && (lp.cardCount <= 3 || lp.rank !== null);
+      if (enemyClose || isEndgame) {
+        bombs.sort((a, b) => a.value - b.value);
+        return bombs[0].cards;
+      }
+    }
+    return null;
+  }
+  view(forPid) {
+    return {
+      players: this.players.map(p => ({
+        pid: p.pid, name: p.name, cardCount: p.cardCount,
+        hand: p.pid === forPid ? p.cards : null,
+        rank: p.rank,
+        redAces: (this.gameOver || p.rank !== null || p.pid === forPid) ? p.redAces : null,
+        blackAces: (this.gameOver || p.rank !== null || p.pid === forPid) ? p.blackAces : null,
+        saidXuan: p.saidXuan, saidFan: p.saidFan,
+        doubleRed: p.pid === forPid ? p.doubleRed : false,
+        score: p.score, offline: p.offline,
+      })),
+      lastPlay: this.lastPlay ? { cards: this.lastPlay.cards, type: this.lastPlay.type, value: this.lastPlay.value, length: this.lastPlay.length, playerPid: this.lastPlay.playerPid } : null,
+      current: this.current, phase: this.phase,
+      xuanMultiplier: this.xuanMultiplier,
+      gameOver: this.gameOver, roundNum: this.roundNum,
+      logs: this.logs,
+      modal: this.pendingModal && this.pendingModal.forPid === forPid ? {
+        title: this.pendingModal.title,
+        text: this.pendingModal.text,
+        options: this.pendingModal.options,
+      } : null,
+      roundResult: this.roundResult || null,
+    };
+  }
+}
+
+// ============================================================
+// 网络层
+// ============================================================
+let peer = null;
+let hostConns = {};
+let clientConn = null;
+let engine = null;
+let lobbyPlayers = [];
+
+function setNetStatus(text, type) {
+  const el = document.getElementById('net-status');
+  if (!el) return;
+  el.innerHTML = `<span class="status-dot ${type}"></span>${text}`;
+}
+
+function generateRoomCode() {
+  // 6 位，纯大写，去掉易混字符
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ---------- 房主 ----------
+function createRoom() {
+  role = 'host';
+  document.getElementById('btn-create').disabled = true;
+  setNetStatus('正在向信令服务器注册房间…', 'wait');
+
+  const code = generateRoomCode();
+  console.log('[host] 尝试注册房间码:', code);
+  peer = new Peer(code, PEER_CONFIG);
+
+  const timeout = setTimeout(() => {
+    if (!peer || !peer.open) {
+      setNetStatus('注册超时，请检查网络或换个网络试试', 'err');
+      document.getElementById('btn-create').disabled = false;
+      toast('连接信令服务器超时，可能需要科学上网或换网络');
+    }
+  }, 15000);
+
+  peer.on('open', (id) => {
+    clearTimeout(timeout);
+    console.log('[host] 房间已注册:', id);
+    setNetStatus(`已注册 · 房间码 ${id}`, 'ok');
+    document.getElementById('lobby-screen').classList.add('hidden');
+    document.getElementById('waiting-screen').classList.remove('hidden');
+    document.getElementById('room-code-display').textContent = id;
+    lobbyPlayers = [{ pid: 0, name: '房主', connected: true }];
+    renderLobby();
+  });
+
+  peer.on('connection', (conn) => {
+    console.log('[host] 收到连接');
+    conn.on('open', () => {
+      if (lobbyPlayers.length >= 4) {
+        conn.send({ type: 'error', msg: '房间已满' });
+        setTimeout(() => conn.close(), 500);
+        return;
+      }
+      const pid = lobbyPlayers.length;
+      const name = '玩家' + pid;
+      lobbyPlayers.push({ pid, name, connected: true, conn });
+      hostConns[pid] = conn;
+      conn.send({ type: 'welcome', pid, name, roomPlayers: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
+      renderLobby();
+      toast(`${name} 加入了房间`);
+      // 广播列表更新
+      broadcastLobby();
+    });
+    conn.on('data', (data) => handleClientData(conn, data));
+    conn.on('close', () => handleClientLeave(conn));
+    conn.on('error', (e) => console.warn('[host] conn error', e));
+  });
+
+  peer.on('error', (e) => {
+    clearTimeout(timeout);
+    console.error('[host] Peer error:', e.type, e);
+    if (e.type === 'unavailable-id') {
+      setNetStatus('房间码冲突，重新生成…', 'wait');
+      peer.destroy();
+      setTimeout(createRoom, 300);
+    } else if (e.type === 'network' || e.type === 'server-error') {
+      setNetStatus('信令服务器连接失败，请检查网络', 'err');
+      document.getElementById('btn-create').disabled = false;
+    } else {
+      setNetStatus('连接出错：' + e.type, 'err');
+      document.getElementById('btn-create').disabled = false;
+    }
+  });
+
+  peer.on('disconnected', () => {
+    console.warn('[host] 与信令服务器断开，尝试重连');
+    peer.reconnect();
+  });
+}
+
+function broadcastLobby() {
+  for (const pid in hostConns) {
+    const conn = hostConns[pid];
+    if (conn && conn.open) {
+      conn.send({ type: 'lobby_update', players: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
+    }
+  }
+}
+
+function renderLobby() {
+  const box = document.getElementById('player-list');
+  box.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const p = lobbyPlayers[i];
+    const div = document.createElement('div');
+    div.className = 'player-item' + (i === 0 ? ' me' : '') + (p ? '' : ' empty');
+    if (p) {
+      div.innerHTML = `<span>${p.name}${i === 0 ? '（房主）' : ''}</span><span style="color:#2ecc71;">✓ 已连接</span>`;
+    } else {
+      div.innerHTML = `<span>等待玩家 ${i + 1}…</span><span style="color:#888;">—</span>`;
+    }
+    box.appendChild(div);
+  }
+  const canStart = lobbyPlayers.length === 4;
+  document.getElementById('btn-start').classList.toggle('hidden', !canStart);
+  document.getElementById('waiting-status').textContent = canStart ? '所有玩家已就位！' : `等待玩家加入…（${lobbyPlayers.length}/4）`;
+}
+
+function handleClientData(conn, data) {
+  if (!data || !data.type) return;
+  // 找对应 pid
+  let pid = null;
+  for (const id in hostConns) if (hostConns[id] === conn) pid = +id;
+  if (pid === null) return;
+
+  if (data.type === 'action') {
+    handleRemoteAction(pid, data.action, data.payload);
+  } else if (data.type === 'modal_response') {
+    handleModalResponse(pid, data.key);
+  } else if (data.type === 'rename') {
+    const lp = lobbyPlayers.find(x => x.pid === pid);
+    if (lp) lp.name = data.name;
+    if (engine) {
+      const p = engine.players.find(x => x.pid === pid);
+      if (p) p.name = data.name;
+    }
+    renderLobby();
+    broadcastLobby();
+    if (engine) broadcastState();
+  }
+}
+
+function handleClientLeave(conn) {
+  let pid = null;
+  for (const id in hostConns) if (hostConns[id] === conn) pid = +id;
+  if (pid === null) return;
+  delete hostConns[pid];
+  const lp = lobbyPlayers.find(p => p.pid === pid);
+  if (lp) lp.connected = false;
+  if (engine) {
+    const p = engine.players.find(x => x.pid === pid);
+    if (p) p.offline = true;
+    broadcastState();
+  }
+  toast(`玩家 ${pid} 断线了`);
+}
+
+function handleRemoteAction(pid, action, payload) {
+  if (!engine) return;
+  if (engine.current !== pid) {
+    sendTo(pid, { type: 'toast', msg: '还没轮到你' });
+    return;
+  }
+  if (action === 'play') {
+    const cardList = payload.cards.map(c => ({ suit: c.suit, rank: c.rank, value: c.value }));
+    const res = engine.applyPlay(pid, cardList);
+    if (!res.ok) sendTo(pid, { type: 'toast', msg: res.msg });
+    else { broadcastState(); scheduleNext(); }
+  } else if (action === 'pass') {
+    const res = engine.applyPass(pid);
+    if (!res.ok) sendTo(pid, { type: 'toast', msg: res.msg });
+    else { broadcastState(); scheduleNext(); }
+  }
+}
+
+function handleModalResponse(pid, key) {
+  if (!engine || !engine.pendingModal) return;
+  if (engine.pendingModal.forPid !== pid) return;
+  const cb = engine.pendingModal.callback;
+  engine.pendingModal = null;
+  if (cb) cb(key);
+  broadcastState();
+}
+
+function scheduleNext() {
+  if (!engine || engine.gameOver) return;
+  engine.advance();
+  broadcastState();
+  if (engine.gameOver) return;
+  const cur = engine.players.find(p => p.pid === engine.current);
+  if (!cur) return;
+  if (cur.offline) setTimeout(() => aiAct(cur.pid), 500);
+}
+
+function aiAct(pid) {
+  if (!engine || engine.gameOver) return;
+  const p = engine.players.find(x => x.pid === pid);
+  if (!p) return;
+  const chosen = engine.aiChoose(p);
+  if (!chosen) engine.applyPass(pid);
+  else engine.applyPlay(pid, chosen);
+  broadcastState();
+  if (!engine.gameOver) setTimeout(scheduleNext, 400);
+}
+
+function broadcastState() {
+  if (!engine) return;
+  viewState = engine.view(0);
+  viewState.myPid = 0;
+  renderGame();
+  for (const pid in hostConns) {
+    const conn = hostConns[pid];
+    if (conn && conn.open) conn.send({ type: 'state', state: engine.view(+pid) });
+  }
+}
+
+function sendTo(pid, data) {
+  const conn = hostConns[pid];
+  if (conn && conn.open) conn.send(data);
+}
+
+function hostStartGame() {
+  if (lobbyPlayers.length !== 4) return;
+  showModeModal(mode => {
+    gameMode = mode;
+    document.getElementById('waiting-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    document.getElementById('log').classList.remove('hidden');
+    for (const pid in hostConns) {
+      const conn = hostConns[pid];
+      if (conn && conn.open) {
+        conn.send({ type: 'start', mode, players: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
+      }
+    }
+    engine = new GameEngine(lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })));
+    engine.players.forEach(p => p.score = 0);
+    newRoundHost();
+  });
+}
+
+function newRoundHost() {
+  engine.deal();
+  engine.roundNum++;
+  engine.log(`=== 第 ${engine.roundNum} 局（${modeLabel(gameMode)}）===`);
+  if (engine.players[0].redAces > 0) engine.log('🎴 你是红A方');
+  else engine.log('🎴 你是黑A方');
+  broadcastState();
+  setTimeout(() => startXuanHost(), 400);
+}
+
+function startXuanHost() {
+  engine.phase = 'xuan';
+  broadcastState();
+  const redHolders = engine.players.filter(p => p.redAces > 0);
+  if (redHolders.length === 0) { beginFanxuanHost(); return; }
+  const solo = redHolders.length === 1 && redHolders[0].redAces === 2;
+  if (gameMode === 'tianxuan' || gameMode === 'youxuan') {
+    setTimeout(() => {
+      for (const p of redHolders) p.saidXuan = true;
+      engine.xuanMultiplier = 2;
+      engine.log(`【${modeLabel(gameMode)}】${solo ? '独宣' : '宣红A'}成功！×2`);
+      broadcastState();
+      setTimeout(beginFanxuanHost, 900);
+    }, 500);
+    return;
+  }
+  if (solo) {
+    const p = redHolders[0];
+    askDecision(p.pid, '独宣', '你独持两张红A！\n是否独宣？\n（分数 ×2，必须拿大贡才算赢）',
+      [{ key: 'yes', text: '宣', primary: true }, { key: 'no', text: '不宣' }],
+      (key) => {
+        if (key === 'yes') { p.saidXuan = true; engine.xuanMultiplier = 2; engine.log(`${p.name} 独宣！×2`); }
+        else engine.log(`${p.name} 不宣`);
+        broadcastState();
+        setTimeout(beginFanxuanHost, 800);
+      });
+    return;
+  }
+  const asker = redHolders[0];
+  askDecision(asker.pid, '宣红A', '你持有红A！\n是否宣红A？',
+    [{ key: 'yes', text: '宣', primary: true }, { key: 'no', text: '不宣' }],
+    (key) => {
+      if (key !== 'yes') {
+        engine.log(`${asker.name} 不宣`);
+        broadcastState();
+        setTimeout(beginFanxuanHost, 600);
+        return;
+      }
+      asker.saidXuan = true;
+      engine.log(`${asker.name} 宣！`);
+      broadcastState();
+      const teammate = redHolders[1];
+      askDecision(teammate.pid, '队友宣了', `${asker.name} 宣红A了！\n是否跟宣？`,
+        [{ key: 'yes', text: '跟宣', primary: true }, { key: 'no', text: '不跟' }],
+        (key2) => {
+          if (key2 === 'yes') {
+            teammate.saidXuan = true;
+            engine.xuanMultiplier = 2;
+            engine.log(`${teammate.name} 跟宣！×2`);
+          } else {
+            engine.log(`${teammate.name} 不跟`);
+            asker.saidXuan = false;
+          }
+          broadcastState();
+          setTimeout(beginFanxuanHost, 800);
+        });
+    });
+}
+
+function beginFanxuanHost() {
+  engine.phase = 'fanxuan';
+  if (engine.xuanMultiplier === 1) { beginPlayHost(); return; }
+  const eligible = [];
+  for (const p of engine.players) {
+    if (p.redAces > 0) continue;
+    if (p.blackAces === 0) continue;
+    const hasBothJokers = p.cards.some(c => c.rank === JOKER_BIG) && p.cards.some(c => c.rank === JOKER_SMALL);
+    const hasThree3 = p.cards.filter(c => c.rank === '3').length >= 3;
+    const hasFour2 = p.cards.filter(c => c.rank === '2').length >= 4;
+    if (hasBothJokers || hasThree3 || hasFour2) eligible.push(p);
+  }
+  if (eligible.length === 0) { beginPlayHost(); return; }
+  const decisions = {};
+  let done = 0;
+  const checkDone = () => {
+    if (++done >= eligible.length) {
+      const allYes = eligible.every(p => decisions[p.pid]);
+      if (allYes) {
+        engine.xuanMultiplier *= 2;
+        eligible.forEach(p => p.saidFan = true);
+        engine.log(`反宣成功！×${engine.xuanMultiplier}`);
+      } else engine.log('反宣失败');
+      broadcastState();
+      setTimeout(beginPlayHost, 700);
+    }
+  };
+  for (const p of eligible) {
+    askDecision(p.pid, '反宣', '你满足反宣条件（黑A + 强牌）！\n是否反宣？',
+      [{ key: 'yes', text: '反宣', primary: true }, { key: 'no', text: '放弃' }],
+      (key) => {
+        decisions[p.pid] = (key === 'yes');
+        if (key === 'yes') { p.saidFan = true; broadcastState(); }
+        else engine.log(`${p.name} 放弃反宣`);
+        checkDone();
+      });
+  }
+}
+
+function beginPlayHost() {
+  engine.phase = 'play';
+  let leader = engine.players[0];
+  for (const p of engine.players) if (p.cards.some(c => c.suit === '♥' && c.rank === '4')) { leader = p; break; }
+  engine.current = leader.pid;
+  engine.log(`${leader.name} 持有红桃4，先出`);
+  broadcastState();
+  scheduleNext();
+}
+
+function askDecision(pid, title, text, options, callback) {
+  if (pid === 0) {
+    showModal(title, text, options.map(o => ({
+      text: o.text, primary: o.primary,
+      onclick: () => { hideModal(); callback(o.key); }
+    })));
+  } else {
+    engine.pendingModal = { forPid: pid, title, text, options, callback };
+    sendTo(pid, { type: 'modal', title, text, options });
+  }
+}
+
+function copyRoomCode() {
+  const code = document.getElementById('room-code-display').textContent;
+  navigator.clipboard?.writeText(code).then(() => toast('已复制：' + code));
+}
+
+// ---------- 客人 ----------
+function showJoinInput() {
+  document.getElementById('join-input-box').classList.toggle('hidden');
+  if (!document.getElementById('join-input-box').classList.contains('hidden')) {
+    setTimeout(() => document.getElementById('room-code-input').focus(), 100);
+  }
+}
+
+// 规范化输入：转大写、去空格、去分隔符
+function normalizeRoomCode(raw) {
+  return String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+}
+
+function joinRoom() {
+  const input = document.getElementById('room-code-input');
+  const code = normalizeRoomCode(input.value);
+  if (code.length < 4) { toast('请输入至少 4 位房间码'); return; }
+
+  role = 'client';
+  document.getElementById('btn-join').disabled = true;
+  setNetStatus('正在连接信令服务器…', 'wait');
+
+  // 如果之前有 peer 实例，销毁
+  if (peer) { try { peer.destroy(); } catch(e){} }
+  peer = new Peer(PEER_CONFIG);
+
+  const timeout = setTimeout(() => {
+    setNetStatus('连接超时，请重试', 'err');
+    document.getElementById('btn-join').disabled = false;
+  }, 15000);
+
+  peer.on('open', () => {
+    clearTimeout(timeout);
+    console.log('[client] 已连信令服务器，尝试连房主:', code);
+    setNetStatus(`正在连接房主 ${code}…`, 'wait');
+    clientConn = peer.connect(code, { reliable: true, metadata: { ts: Date.now() } });
+
+    clientConn.on('open', () => {
+      console.log('[client] 与房主连接成功');
+      setNetStatus('已连接房主，等待房主分配位置…', 'ok');
+      const name = prompt('你的昵称：', '玩家' + (1 + Math.floor(Math.random() * 3))) || '玩家';
+      clientConn.send({ type: 'rename', name });
+    });
+
+    clientConn.on('data', handleHostData);
+    clientConn.on('close', () => {
+      setNetStatus('与房主断开连接', 'err');
+      toast('与房主断开连接');
+      document.getElementById('btn-join').disabled = false;
+    });
+    clientConn.on('error', (e) => {
+      console.error('[client] conn error:', e);
+      setNetStatus('连接房主失败：' + e.type, 'err');
+      document.getElementById('btn-join').disabled = false;
+    });
+  });
+
+  peer.on('error', (e) => {
+    clearTimeout(timeout);
+    console.error('[client] Peer error:', e.type, e);
+    document.getElementById('btn-join').disabled = false;
+    if (e.type === 'peer-unavailable') {
+      setNetStatus('房主不在线或房间码错误', 'err');
+      toast('❌ 找不到该房间：\n1) 确认房间码完整无误\n2) 确认房主还没关掉页面\n3) 让房主重新复制一次房间码');
+    } else if (e.type === 'network' || e.type === 'server-error') {
+      setNetStatus('信令服务器连接失败', 'err');
+      toast('无法连接信令服务器，请检查网络（可能需要科学上网）');
+    } else {
+      setNetStatus('连接出错：' + e.type, 'err');
+    }
+  });
+}
+
+function handleHostData(data) {
+  if (!data || !data.type) return;
+  if (data.type === 'welcome') {
+    myPid = data.pid;
+    document.getElementById('lobby-screen').classList.add('hidden');
+    document.getElementById('waiting-screen').classList.remove('hidden');
+    document.getElementById('room-code-display').textContent = '等待房主';
+    document.getElementById('waiting-status').textContent = '等待房主开始…';
+    document.getElementById('btn-start').classList.add('hidden');
+    renderClientLobby(data.roomPlayers);
+    toast(`你已加入，位置 ${data.pid}`);
+  } else if (data.type === 'lobby_update') {
+    renderClientLobby(data.players);
+  } else if (data.type === 'start') {
+    gameMode = data.mode;
+    document.getElementById('waiting-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    document.getElementById('log').classList.remove('hidden');
+    const me = data.players.find(p => p.pid === myPid);
+    document.getElementById('my-name').textContent = me ? me.name : '你';
+  } else if (data.type === 'state') {
+    viewState = data.state;
+    viewState.myPid = myPid;
+    renderGame();
+  } else if (data.type === 'modal') {
+    showModal(data.title, data.text, data.options.map(o => ({
+      text: o.text, primary: o.primary,
+      onclick: () => {
+        hideModal();
+        if (clientConn && clientConn.open) clientConn.send({ type: 'modal_response', key: o.key });
+      }
+    })));
+  } else if (data.type === 'toast') {
+    toast(data.msg);
+  } else if (data.type === 'error') {
+    toast('❌ ' + data.msg);
+  }
+}
+
+function renderClientLobby(players) {
+  const box = document.getElementById('player-list');
+  box.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const p = players[i];
+    const div = document.createElement('div');
+    div.className = 'player-item' + (p && p.pid === myPid ? ' me' : '') + (p ? '' : ' empty');
+    if (p) {
+      div.innerHTML = `<span>${p.name}${p.pid === 0 ? '（房主）' : ''}</span><span style="color:#2ecc71;">✓</span>`;
+    } else {
+      div.innerHTML = `<span>等待玩家 ${i + 1}…</span><span style="color:#888;">—</span>`;
+    }
+    box.appendChild(div);
+  }
+}
+
+function sendClientAction(action, payload) {
+  if (!clientConn || !clientConn.open) { toast('未连接到房主'); return; }
+  clientConn.send({ type: 'action', action, payload });
+}
+
+// ============================================================
+// 模式选择
+// ============================================================
+function showModeModal(callback) {
+  showModal('选择模式', '标准：需队友同意才能宣\n天宣：发牌后自动宣\n有宣必跟：点击即宣成功', [
+    { text: '标准', primary: true, onclick: () => { hideModal(); callback('standard'); }},
+    { text: '天宣', onclick: () => { hideModal(); callback('tianxuan'); }},
+    { text: '有宣必跟', onclick: () => { hideModal(); callback('youxuan'); }},
+  ]);
+}
+
+// ============================================================
+// 渲染
+// ============================================================
+function renderGame() {
+  if (!viewState) return;
+  const st = viewState;
+  const me = st.players.find(p => p.pid === myPid);
+  for (const p of st.players) {
+    if (p.pid === myPid) continue;
+    const el = document.querySelector(`.opp[data-pid="${p.pid}"]`);
+    if (!el) continue;
+    el.querySelector('.name').textContent = p.name + (p.rank ? ` · 第${p.rank}名` : '');
+    const sc = p.score || 0;
+    const scCls = sc > 0 ? 'positive' : sc < 0 ? 'negative' : '';
+    el.querySelector('.count').innerHTML = `${p.cardCount}张 <span class="score ${scCls}">${sc > 0 ? '+' : ''}${sc}</span>`;
+    el.classList.toggle('active', st.current === p.pid && st.phase === 'play' && p.rank === null);
+    el.classList.toggle('offline', p.offline);
+    el.classList.toggle('xuan', p.saidXuan === true);
+    el.classList.toggle('fan', p.saidFan === true);
+    const badge = el.querySelector('.badge');
+    if (st.gameOver || p.rank !== null) {
+      if (p.redAces > 0) { badge.textContent = '红A'; badge.className = 'badge red'; }
+      else if (p.redAces === 0) { badge.textContent = '黑A'; badge.className = 'badge black'; }
+      else { badge.textContent = ''; badge.className = 'badge'; }
+    } else { badge.textContent = ''; badge.className = 'badge'; }
+  }
+  const handEl = document.getElementById('hand');
+  handEl.innerHTML = '';
+  const myHand = me && me.hand ? me.hand : [];
+  myHand.forEach((c, idx) => {
+    const div = document.createElement('div');
+    div.className = 'card ' + (isRed(c) ? 'red' : 'black');
+    if (selected.has(idx)) div.classList.add('selected');
+    else if (hintedCards.has(idx)) div.classList.add('hinted');
+    div.innerHTML = `<div class="rank">${c.rank}</div><div class="suit">${c.suit}</div>`;
+    div.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!isMyTurn()) return;
+      if (selected.has(idx)) selected.delete(idx);
+      else selected.add(idx);
+      hintedCards.clear(); hintCacheKey = null;
+      renderGame();
+    });
+    handEl.appendChild(div);
+  });
+  if (me) {
+    document.getElementById('my-name').textContent = me.name;
+    document.getElementById('my-count').textContent = me.cardCount + ' 张';
+    const myScore = me.score || 0;
+    const myScoreCls = myScore > 0 ? 'positive' : myScore < 0 ? 'negative' : '';
+    document.getElementById('my-score').textContent = (myScore > 0 ? '+' : '') + myScore;
+    document.getElementById('my-score').className = 'score ' + myScoreCls;
+    const myArea = document.getElementById('my-area');
+    myArea.classList.toggle('xuan', me.saidXuan === true);
+    myArea.classList.toggle('fan', me.saidFan === true);
+    const myBadge = document.getElementById('my-badge');
+    if (st.gameOver || me.rank !== null) {
+      if (me.redAces > 0) { myBadge.textContent = '红A方'; myBadge.className = 'badge red'; }
+      else { myBadge.textContent = '黑A方'; myBadge.className = 'badge black'; }
+    } else { myBadge.textContent = ''; myBadge.className = 'badge'; }
+  }
+  const mb = document.getElementById('mult-badge');
+  if (st.xuanMultiplier > 1) { mb.textContent = `宣 ×${st.xuanMultiplier}`; mb.classList.add('show'); }
+  else mb.classList.remove('show');
+  const playedEl = document.getElementById('played');
+  playedEl.innerHTML = '';
+  if (st.lastPlay) {
+    st.lastPlay.cards.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'card small ' + (isRed(c) ? 'red' : 'black');
+      div.innerHTML = `<div class="rank">${c.rank}</div><div class="suit">${c.suit}</div>`;
+      playedEl.appendChild(div);
+    });
+    const lp = st.players.find(p => p.pid === st.lastPlay.playerPid);
+    const label = document.createElement('div');
+    label.className = 'played-label';
+    label.style.flexBasis = '100%';
+    label.textContent = `${lp ? lp.name : '?'} 出了 ${st.lastPlay.type}`;
+    playedEl.appendChild(label);
+  } else playedEl.innerHTML = '<span class="empty">等待出牌…</span>';
+  const statusEl = document.getElementById('status');
+  if (!statusEl.dataset.locked) {
+    statusEl.classList.remove('highlight', 'hint', 'error');
+    if (st.phase === 'xuan') statusEl.textContent = '🔥 宣红A阶段…';
+    else if (st.phase === 'fanxuan') statusEl.textContent = '⚔ 反宣阶段…';
+    else if (st.gameOver) statusEl.textContent = '本局结束';
+    else if (isMyTurn()) { statusEl.textContent = '🎯 轮到你出牌'; statusEl.classList.add('highlight'); }
+    else {
+      const cur = st.players.find(p => p.pid === st.current);
+      statusEl.textContent = `等待 ${cur ? cur.name : '?'} 出牌…`;
+    }
+  }
+  const logEl = document.getElementById('log');
+  logEl.innerHTML = '';
+  (st.logs || []).forEach(msg => {
+    const p = document.createElement('p');
+    p.textContent = msg;
+    logEl.appendChild(p);
+  });
+  logEl.scrollTop = logEl.scrollHeight;
+  const myTurn = isMyTurn();
+  document.getElementById('btn-play').disabled = !myTurn;
+  document.getElementById('btn-hint').disabled = !myTurn;
+  document.getElementById('btn-pass').disabled = !myTurn || !st.lastPlay;
+}
+
+function isMyTurn() {
+  return viewState && viewState.phase === 'play' && !viewState.gameOver && viewState.current === myPid;
+}
+
+// ============================================================
+// 操作
+// ============================================================
+function humanPlay() {
+  if (!viewState) return;
+  const me = viewState.players.find(p => p.pid === myPid);
+  if (!me || !me.hand) return;
+  const chosen = [...selected].sort((a, b) => a - b).map(i => me.hand[i]);
+  if (chosen.length === 0) { flashStatus('⚠ 请先选牌', 'error'); return; }
+  const ht = getHandType(chosen);
+  if (!ht) { flashStatus('❌ 非法牌型', 'error'); return; }
+  if (viewState.lastPlay && !canBeat(ht, viewState.lastPlay)) { flashStatus('❌ 压不过上一手', 'error'); return; }
+  selected.clear(); hintedCards.clear(); hintCacheKey = null;
+  if (role === 'host') {
+    const res = engine.applyPlay(myPid, chosen);
+    if (!res.ok) { flashStatus('❌ ' + res.msg, 'error'); return; }
+    broadcastState(); scheduleNext();
+  } else {
+    sendClientAction('play', { cards: chosen });
+  }
+}
+
+function humanPass() {
+  selected.clear(); hintedCards.clear(); hintCacheKey = null;
+  if (role === 'host') {
+    const res = engine.applyPass(myPid);
+    if (!res.ok) { flashStatus('❌ ' + res.msg, 'error'); return; }
+    broadcastState(); scheduleNext();
+  } else sendClientAction('pass', {});
+}
+
+function hint() {
+  if (!viewState || !isMyTurn()) return;
+  const me = viewState.players.find(p => p.pid === myPid);
+  if (!me || !me.hand) return;
+  if (!viewState.lastPlay) {
+    selected.clear(); hintedCards.clear();
+    let minIdx = 0;
+    for (let i = 1; i < me.hand.length; i++) if (me.hand[i].value < me.hand[minIdx].value) minIdx = i;
+    selected.add(minIdx); hintedCards.add(minIdx);
+    hintIndex = 0; hintCacheKey = null;
+    renderGame();
+    flashStatus(`💡 建议出：${cardLabel(me.hand[minIdx])}`, 'hint');
+    return;
+  }
+  let plays = findPlays(me.hand, viewState.lastPlay);
+  plays = plays.filter(p => p && p.length > 0 && getHandType(p));
+  if (plays.length === 0) {
+    selected.clear(); hintedCards.clear(); renderGame();
+    flashStatus('💡 没有能压过的牌，只能过牌', 'hint');
+    return;
+  }
+  plays.sort((a, b) => {
+    const ha = getHandType(a), hb = getHandType(b);
+    return ha.value - hb.value || a.length - b.length;
+  });
+  if (hintCacheKey !== viewState.lastPlay) { hintIndex = 0; hintCacheKey = viewState.lastPlay; }
+  else hintIndex = (hintIndex + 1) % plays.length;
+  const chosen = plays[hintIndex];
+  const ht = getHandType(chosen);
+  selected.clear(); hintedCards.clear();
+  const used = new Set();
+  for (const card of chosen) {
+    for (let i = 0; i < me.hand.length; i++) {
+      if (used.has(i)) continue;
+      const hc = me.hand[i];
+      if (hc.suit === card.suit && hc.rank === card.rank) {
+        used.add(i); selected.add(i); hintedCards.add(i);
+        break;
+      }
+    }
+  }
+  renderGame();
+  const label = plays.length > 1
+    ? `💡 提示 ${hintIndex + 1}/${plays.length}：${ht.type}（再点切换）`
+    : `💡 提示：${ht.type}`;
+  flashStatus(label, 'hint');
+}
+
+function flashStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.dataset.locked = '1';
+  el.classList.remove('highlight', 'hint', 'error');
+  el.textContent = msg;
+  el.classList.add(type === 'hint' ? 'hint' : type === 'error' ? 'error' : 'highlight');
+  setTimeout(() => { delete el.dataset.locked; renderGame(); }, 1400);
+}
+
+// ============================================================
+// 弹窗 / Toast
+// ============================================================
+function showModal(title, text, buttons) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').textContent = text;
+  const box = document.getElementById('modal-buttons');
+  box.innerHTML = '';
+  for (const b of buttons) {
+    const btn = document.createElement('button');
+    btn.textContent = b.text;
+    btn.className = b.primary ? 'primary' : 'secondary';
+    btn.onclick = b.onclick;
+    box.appendChild(btn);
+  }
+  document.getElementById('modal').classList.remove('hidden');
+}
+function hideModal() { document.getElementById('modal').classList.add('hidden'); }
+
+let toastTimer = null;
+function toast(msg) {
+  let el = document.querySelector('.toast');
+  if (!el) { el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), 3000);
+}
+
+// ============================================================
+// 绑定
+// ============================================================
+document.getElementById('btn-play').addEventListener('click', humanPlay);
+document.getElementById('btn-hint').addEventListener('click', hint);
+document.getElementById('btn-pass').addEventListener('click', humanPass);
+document.getElementById('btn-leave').addEventListener('click', () => {
+  if (confirm('确定退出游戏？')) location.reload();
+});
+document.getElementById('room-code-input').addEventListener('input', (e) => {
+  e.target.value = normalizeRoomCode(e.target.value);
+});
+document.getElementById('room-code-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') joinRoom();
+});
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>
