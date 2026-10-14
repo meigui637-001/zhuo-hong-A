@@ -32,15 +32,12 @@
     user-select: none;
   }
   .hidden { display: none !important; }
-
   .screen {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
-    gap: 14px;
-    z-index: 10;
-    overflow-y: auto;
+    gap: 14px; z-index: 10; overflow-y: auto;
   }
   .screen h1 { font-size: clamp(24px, 4vw, 38px); text-align: center; margin-bottom: 4px; text-shadow: 0 4px 16px rgba(0,0,0,0.5); }
   .screen h2 { font-size: clamp(16px, 2.5vw, 22px); text-align: center; opacity: 0.9; }
@@ -48,19 +45,17 @@
   .screen input {
     width: min(280px, 80vw);
     padding: 14px 16px;
-    font-size: clamp(18px, 2.4vw, 22px);
+    font-size: clamp(16px, 2vw, 20px);
     border: 2px solid rgba(255,255,255,0.3);
     border-radius: var(--radius);
     background: rgba(0,0,0,0.3);
     color: #fff;
     text-align: center;
-    letter-spacing: 6px;
-    text-transform: uppercase;
     font-family: inherit;
     font-weight: bold;
   }
   .screen input:focus { outline: none; border-color: #f1c40f; }
-  .screen input::placeholder { letter-spacing: 2px; font-weight: normal; font-size: 14px; }
+  .screen input::placeholder { letter-spacing: 0; font-weight: normal; font-size: 14px; }
   .screen .btn-col { display: flex; flex-direction: column; gap: 10px; width: min(280px, 80vw); }
   .screen button {
     padding: 14px 24px;
@@ -76,13 +71,7 @@
   .screen button.secondary { background: linear-gradient(180deg, #34495e, #2c3e50); color: #fff; }
   .screen button.ghost { background: rgba(255,255,255,0.1); color: #fff; }
 
-  .status-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-    vertical-align: middle;
-  }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
   .status-dot.ok { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
   .status-dot.wait { background: #f1c40f; animation: blink 1s infinite; }
   .status-dot.err { background: #e74c3c; }
@@ -101,15 +90,12 @@
     font-family: "Courier New", monospace;
   }
   .room-code-box button {
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 6px 12px; font-size: 12px;
     background: rgba(255,255,255,0.15);
-    color: #fff;
-    border-radius: 4px;
+    color: #fff; border-radius: 4px;
     border: none; cursor: pointer;
     letter-spacing: normal;
   }
-
   .player-list { display: flex; flex-direction: column; gap: 6px; width: min(340px, 88vw); }
   .player-item {
     padding: 10px 14px;
@@ -118,7 +104,6 @@
     display: flex; align-items: center; justify-content: space-between;
     font-size: clamp(13px, 1.6vw, 15px);
     border: 2px solid transparent;
-    transition: border-color 0.2s;
   }
   .player-item.me { border-color: #f1c40f; }
   .player-item.empty { opacity: 0.4; font-style: italic; }
@@ -127,12 +112,9 @@
     display: flex; flex-direction: column;
     height: 100vh; height: 100dvh;
     padding:
-      calc(var(--pad) + var(--safe-top))
-      calc(var(--pad) + var(--safe-right))
-      calc(var(--pad) + var(--safe-bottom))
-      calc(var(--pad) + var(--safe-left));
-    gap: var(--gap);
-    overflow: hidden;
+      calc(var(--pad) + var(--safe-top)) calc(var(--pad) + var(--safe-right))
+      calc(var(--pad) + var(--safe-bottom)) calc(var(--pad) + var(--safe-left));
+    gap: var(--gap); overflow: hidden;
   }
   .opponents { display: flex; gap: var(--gap); flex-shrink: 0; }
   .opp {
@@ -167,21 +149,19 @@
   @keyframes xuanPulse { 0% { box-shadow: 0 0 0 rgba(231,76,60,0); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(231,76,60,1); transform: scale(1.03); } 100% { box-shadow: 0 0 16px rgba(231,76,60,0.75); transform: scale(1); } }
   @keyframes fanPulse { 0% { box-shadow: 0 0 0 rgba(155,89,182,0); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(155,89,182,1); transform: scale(1.03); } 100% { box-shadow: 0 0 16px rgba(155,89,182,0.75); transform: scale(1); } }
   .opp .avatar {
-    width: clamp(24px, 3.5vw, 36px);
-    height: clamp(24px, 3.5vw, 36px);
+    width: clamp(24px, 3.5vw, 36px); height: clamp(24px, 3.5vw, 36px);
     border-radius: 50%;
     background: linear-gradient(135deg, #34495e, #2c3e50);
     display: flex; align-items: center; justify-content: center;
     font-size: clamp(11px, 1.5vw, 15px); font-weight: bold; flex-shrink: 0;
     border: 1px solid rgba(255,255,255,0.15);
-    transition: background 0.3s, box-shadow 0.3s;
   }
   .opp .info { min-width: 0; flex: 1; }
   .opp .name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; }
   .opp .count { opacity: 0.7; font-size: 0.85em; line-height: 1.2; }
   .opp .badge { font-size: 0.75em; padding: 1px 6px; border-radius: 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; }
-  .opp .badge.red { background: #c0392b; color: #fff; }
-  .opp .badge.black { background: #2c3e50; color: #fff; }
+  .opp .badge.red { background: #c0392b; }
+  .opp .badge.black { background: #2c3e50; }
   .opp .badge:empty { display: none; }
   .opp .score { font-size: 0.75em; margin-left: 4px; font-weight: bold; }
   .opp .score.positive { color: #2ecc71; }
@@ -190,33 +170,24 @@
   .table-area { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap); position: relative; }
   .mult-badge {
     position: absolute; top: 4px; right: 4px;
-    font-size: clamp(11px, 1.4vw, 14px);
-    font-weight: bold;
+    font-size: clamp(11px, 1.4vw, 14px); font-weight: bold;
     padding: clamp(3px, 0.6vw, 6px) clamp(8px, 1.2vw, 12px);
     background: rgba(155, 89, 182, 0.35);
     border: 1px solid rgba(155, 89, 182, 0.7);
-    color: #d7bde2;
-    border-radius: 999px;
+    color: #d7bde2; border-radius: 999px;
     opacity: 0; transition: opacity 0.3s;
     pointer-events: none;
   }
   .mult-badge.show { opacity: 1; }
-  .played-area {
-    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
-    gap: 2px; max-width: 100%;
-    padding: 4px 8px;
-    min-height: calc(var(--card-h) * 0.8);
-  }
+  .played-area { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; max-width: 100%; padding: 4px 8px; min-height: calc(var(--card-h) * 0.8); }
   .played-area .empty { opacity: 0.35; font-size: clamp(12px, 1.6vw, 15px); letter-spacing: 2px; }
   .played-label { font-size: clamp(11px, 1.4vw, 13px); opacity: 0.75; margin-top: 2px; text-align: center; }
   .status {
     font-size: clamp(12px, 1.5vw, 15px);
     padding: clamp(4px, 0.8vw, 6px) clamp(12px, 2vw, 20px);
     background: rgba(0, 0, 0, 0.35);
-    border-radius: 999px;
-    text-align: center;
-    max-width: 90%;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border-radius: 999px; text-align: center;
+    max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transition: background 0.2s, color 0.2s;
   }
   .status.highlight { background: rgba(241,196,15,0.25); color: #f1c40f; font-weight: bold; }
@@ -224,28 +195,15 @@
   .status.error { background: rgba(231,76,60,0.35); color: #ec7063; font-weight: bold; }
 
   .my-area {
-    flex-shrink: 0;
-    display: flex; flex-direction: column; gap: 2px;
-    padding: 4px 8px;
-    border-radius: var(--radius);
+    flex-shrink: 0; display: flex; flex-direction: column; gap: 2px;
+    padding: 4px 8px; border-radius: var(--radius);
     border: 2px solid transparent;
     transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
   }
-  .my-area.xuan {
-    border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.12);
-    box-shadow: 0 0 16px rgba(231, 76, 60, 0.6);
-    animation: xuanPulse 0.6s ease;
-  }
-  .my-area.fan {
-    border-color: #9b59b6;
-    background: rgba(155, 89, 182, 0.12);
-    box-shadow: 0 0 16px rgba(155, 89, 182, 0.6);
-    animation: fanPulse 0.6s ease;
-  }
+  .my-area.xuan { border-color: #e74c3c; background: rgba(231, 76, 60, 0.12); box-shadow: 0 0 16px rgba(231, 76, 60, 0.6); animation: xuanPulse 0.6s ease; }
+  .my-area.fan { border-color: #9b59b6; background: rgba(155, 89, 182, 0.12); box-shadow: 0 0 16px rgba(155, 89, 182, 0.6); animation: fanPulse 0.6s ease; }
   .my-label {
-    font-size: clamp(11px, 1.4vw, 13px);
-    opacity: 0.85;
+    font-size: clamp(11px, 1.4vw, 13px); opacity: 0.85;
     padding: 0 4px;
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   }
@@ -256,31 +214,19 @@
   .my-label .score { font-weight: bold; margin-left: 6px; }
   .my-label .score.positive { color: #2ecc71; }
   .my-label .score.negative { color: #e74c3c; }
-  .my-label .xuan-tag {
-    color: #ff8a80; font-weight: bold;
-    padding: 1px 6px; border-radius: 4px;
-    background: rgba(231, 76, 60, 0.35);
-    display: none; font-size: 0.9em;
-  }
-  .my-label .fan-tag {
-    color: #d7bde2; font-weight: bold;
-    padding: 1px 6px; border-radius: 4px;
-    background: rgba(155, 89, 182, 0.35);
-    display: none; font-size: 0.9em;
-  }
+  .my-label .xuan-tag { color: #ff8a80; font-weight: bold; padding: 1px 6px; border-radius: 4px; background: rgba(231, 76, 60, 0.35); display: none; font-size: 0.9em; }
+  .my-label .fan-tag { color: #d7bde2; font-weight: bold; padding: 1px 6px; border-radius: 4px; background: rgba(155, 89, 182, 0.35); display: none; font-size: 0.9em; }
   .my-area.xuan .my-label .xuan-tag { display: inline-block; }
   .my-area.fan .my-label .fan-tag { display: inline-block; }
 
   .hand {
     display: flex; flex-wrap: wrap; justify-content: center;
     gap: 2px; padding: 8px 2px 2px;
-    max-height: 26vh;
-    overflow-y: auto; overflow-x: hidden;
+    max-height: 26vh; overflow-y: auto; overflow-x: hidden;
     scrollbar-width: thin;
   }
   .hand::-webkit-scrollbar { width: 4px; }
   .hand::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
-
   .card {
     width: var(--card-w); height: var(--card-h);
     background: linear-gradient(160deg, #ffffff 0%, #f3f3f3 100%);
@@ -299,25 +245,14 @@
   .card .suit { font-size: var(--card-suit-font); line-height: 1; margin-top: 2px; }
   .card.red { color: #c0392b; }
   .card.black { color: #1a1a1a; }
-  .card.selected {
-    transform: translateY(calc(var(--card-h) * -0.18));
-    box-shadow: 0 -3px 10px rgba(241, 196, 15, 0.8);
-    border-color: #f1c40f; border-width: 2px;
-  }
-  .card.hinted {
-    transform: translateY(calc(var(--card-h) * -0.18));
-    box-shadow: 0 -3px 10px rgba(52, 152, 219, 0.9);
-    border-color: #3498db; border-width: 2px;
-  }
+  .card.selected { transform: translateY(calc(var(--card-h) * -0.18)); box-shadow: 0 -3px 10px rgba(241, 196, 15, 0.8); border-color: #f1c40f; border-width: 2px; }
+  .card.hinted { transform: translateY(calc(var(--card-h) * -0.18)); box-shadow: 0 -3px 10px rgba(52, 152, 219, 0.9); border-color: #3498db; border-width: 2px; }
   .card.small { width: calc(var(--card-w) * 0.82); height: calc(var(--card-h) * 0.82); cursor: default; padding: 1px; }
   .card.small .rank { font-size: calc(var(--card-font) * 0.85); }
   .card.small .suit { font-size: calc(var(--card-suit-font) * 0.85); margin-top: 1px; }
   @media (hover: hover) and (pointer: fine) {
-    .card:hover:not(.small):not(.selected):not(.hinted) {
-      transform: translateY(calc(var(--card-h) * -0.08));
-    }
+    .card:hover:not(.small):not(.selected):not(.hinted) { transform: translateY(calc(var(--card-h) * -0.08)); }
   }
-
   .controls { display: flex; gap: var(--gap); justify-content: center; flex-shrink: 0; padding-top: 2px; }
   button.ctrl {
     flex: 1; max-width: 130px;
@@ -325,8 +260,7 @@
     font-size: clamp(12px, 1.5vw, 15px);
     font-family: inherit; font-weight: bold;
     border: none; border-radius: var(--radius);
-    cursor: pointer;
-    touch-action: manipulation;
+    cursor: pointer; touch-action: manipulation;
     transition: transform 0.1s, opacity 0.15s;
     white-space: nowrap;
   }
@@ -339,11 +273,9 @@
 
   .log-panel {
     position: fixed; right: calc(8px + var(--safe-right)); bottom: calc(80px + var(--safe-bottom));
-    width: 200px; max-height: 150px;
-    overflow-y: auto;
+    width: 200px; max-height: 150px; overflow-y: auto;
     background: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    padding: 6px 10px;
+    border-radius: 8px; padding: 6px 10px;
     font-size: 11px; line-height: 1.6;
     z-index: 40; pointer-events: none;
     scrollbar-width: thin;
@@ -365,10 +297,8 @@
   .modal .box {
     background: #fff; color: #222;
     padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 40px);
-    border-radius: 14px;
-    text-align: center;
-    max-width: min(92vw, 420px);
-    width: 100%;
+    border-radius: 14px; text-align: center;
+    max-width: min(92vw, 420px); width: 100%;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     animation: popIn 0.25s ease;
   }
@@ -378,8 +308,7 @@
   .modal .box .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .modal .box button {
     margin: 0; min-width: 80px;
-    padding: 10px 20px;
-    font-size: 14px;
+    padding: 10px 20px; font-size: 14px;
     font-family: inherit; font-weight: bold;
     border: none; border-radius: var(--radius);
     cursor: pointer;
@@ -388,20 +317,13 @@
   .modal .box button.secondary { background: linear-gradient(180deg, #34495e, #2c3e50); color: #fff; }
 
   .toast {
-    position: fixed;
-    top: calc(12px + var(--safe-top));
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.9);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 999px;
-    font-size: 13px;
-    z-index: 200;
+    position: fixed; top: calc(12px + var(--safe-top));
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.9); color: #fff;
+    padding: 10px 20px; border-radius: 999px;
+    font-size: 13px; z-index: 200;
     animation: toastIn 0.2s ease;
-    max-width: 92vw;
-    line-height: 1.4;
-    text-align: center;
+    max-width: 92vw; line-height: 1.4; text-align: center;
   }
   @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
@@ -418,14 +340,16 @@
   <h1>🃏 捉红枪</h1>
   <p>好友对战 · 4 人</p>
   <div class="btn-col" style="margin-top: 8px;">
+    <input type="text" id="nickname-input" placeholder="你的昵称" maxlength="12" style="letter-spacing:0;font-size:16px;font-weight:normal;">
     <button class="primary" id="btn-create" onclick="createRoom()">创建房间</button>
     <button class="secondary" onclick="showJoinInput()">加入房间</button>
   </div>
   <div class="hidden" id="join-input-box" style="display:flex;flex-direction:column;gap:10px;align-items:center;">
-    <input type="text" id="room-code-input" placeholder="输入 6 位房间码" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <input type="text" id="room-code-input" placeholder="输入 6 位房间码" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" style="letter-spacing:6px;text-transform:uppercase;">
     <button class="primary" onclick="joinRoom()" style="width:min(280px,80vw);" id="btn-join">加入</button>
   </div>
-  <div id="net-status" style="font-size:12px;opacity:0.6;margin-top:10px;"><span class="status-dot wait"></span>正在连接信令服务器…</div>
+  <div id="net-status" style="font-size:12px;opacity:0.7;margin-top:10px;"><span class="status-dot wait"></span>正在连接服务器…</div>
+  <div id="server-info" style="font-size:11px;opacity:0.4;margin-top:4px;"></div>
 </div>
 
 <div class="screen hidden" id="waiting-screen">
@@ -437,7 +361,7 @@
   <p style="margin-top:-4px;">把房间码发给朋友，让 ta 点「加入房间」</p>
   <div class="player-list" id="player-list" style="margin-top: 8px;"></div>
   <p id="waiting-status" style="margin-top:4px;">等待玩家加入…</p>
-  <button class="primary hidden" id="btn-start" onclick="hostStartGame()" style="width:min(280px,80vw);">开始游戏</button>
+  <button class="primary hidden" id="btn-start" onclick="showModeSelect()" style="width:min(280px,80vw);">开始游戏</button>
 </div>
 
 <div class="app hidden" id="game-screen">
@@ -494,17 +418,44 @@ RANK_VALUE[JOKER_BIG] = RANKS.length + 1;
 const A_VALUE = RANK_VALUE['A'];
 const HT = { SINGLE: '单张', PAIR: '对子', TRIPLE: '三同张', QUAD: '四同张', STRAIGHT: '顺子', CONSECUTIVE_PAIRS: '连对' };
 
-// PeerJS 配置：加 STUN 提升 NAT 穿透
-const PEER_CONFIG = {
-  debug: 1,
-  config: {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:global.stun.twilio.com:3478' },
-    ]
-  }
+// ============ 官方服务器 + 自动切换 ============
+const SERVER_LIST = [
+  { host: '0.peerjs.com', port: 443, secure: true, path: '/' },
+  { host: '1.peerjs.com', port: 443, secure: true, path: '/' },
+];
+let currentServerIndex = 0;
+let lastServerSwitchTime = 0;
+const MIN_SWITCH_INTERVAL = 5000;
+
+const BASE_ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
 };
+
+function currentServerName() { return SERVER_LIST[currentServerIndex].host; }
+function updateServerInfo() {
+  const el = document.getElementById('server-info');
+  if (el) el.textContent = `信令: ${currentServerName()}`;
+}
+function createPeerInstance(id = null) {
+  const cfg = SERVER_LIST[currentServerIndex];
+  const opts = { debug: 1, config: BASE_ICE_CONFIG, host: cfg.host, port: cfg.port, secure: cfg.secure, path: cfg.path };
+  console.log(`[peer] 使用服务器 ${cfg.host}${id ? ' id=' + id : ''}`);
+  return id ? new Peer(id, opts) : new Peer(opts);
+}
+function trySwitchServer(where) {
+  const now = Date.now();
+  if (now - lastServerSwitchTime < MIN_SWITCH_INTERVAL) return false;
+  lastServerSwitchTime = now;
+  const oldHost = currentServerName();
+  currentServerIndex = (currentServerIndex + 1) % SERVER_LIST.length;
+  console.log(`[${where}] 🔄 ${oldHost} → ${currentServerName()}`);
+  updateServerInfo();
+  return true;
+}
+const SERVER_ERROR_TYPES = ['network', 'server-error', 'socket-error', 'socket-closed'];
 
 // ============================================================
 // 全局
@@ -517,6 +468,9 @@ let selected = new Set();
 let hintedCards = new Set();
 let hintIndex = 0;
 let hintCacheKey = null;
+let hostOpenedOnce = false;
+let clientOpenedOnce = false;
+let currentRoomCode = null;
 
 function modeLabel(m) { return { standard: '标准', tianxuan: '天宣', youxuan: '有宣必跟' }[m] || '标准'; }
 
@@ -624,7 +578,7 @@ function findPlays(hand, lastPlay) {
 }
 
 // ============================================================
-// 游戏引擎（房主端）
+// 游戏引擎（房主端跑）
 // ============================================================
 class GameEngine {
   constructor(players) {
@@ -635,17 +589,10 @@ class GameEngine {
       saidXuan: false, saidFan: false, doubleRed: false,
       score: 0, offline: false,
     }));
-    this.lastPlay = null;
-    this.lastPlayer = null;
-    this.passes = 0;
-    this.current = 0;
-    this.finishedOrder = [];
-    this.gameOver = false;
-    this.phase = 'idle';
-    this.xuanMultiplier = 1;
-    this.roundNum = 0;
-    this.logs = [];
-    this.pendingModal = null;
+    this.lastPlay = null; this.lastPlayer = null; this.passes = 0;
+    this.current = 0; this.finishedOrder = []; this.gameOver = false;
+    this.phase = 'idle'; this.xuanMultiplier = 1; this.roundNum = 0;
+    this.logs = []; this.pendingModal = null;
   }
   log(msg) { this.logs.push(msg); if (this.logs.length > 40) this.logs.shift(); }
   reset() {
@@ -886,11 +833,6 @@ class GameEngine {
       xuanMultiplier: this.xuanMultiplier,
       gameOver: this.gameOver, roundNum: this.roundNum,
       logs: this.logs,
-      modal: this.pendingModal && this.pendingModal.forPid === forPid ? {
-        title: this.pendingModal.title,
-        text: this.pendingModal.text,
-        options: this.pendingModal.options,
-      } : null,
       roundResult: this.roundResult || null,
     };
   }
@@ -912,7 +854,6 @@ function setNetStatus(text, type) {
 }
 
 function generateRoomCode() {
-  // 6 位，纯大写，去掉易混字符
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
@@ -922,48 +863,65 @@ function generateRoomCode() {
 // ---------- 房主 ----------
 function createRoom() {
   role = 'host';
+  hostOpenedOnce = false;
   document.getElementById('btn-create').disabled = true;
   setNetStatus('正在向信令服务器注册房间…', 'wait');
 
-  const code = generateRoomCode();
-  console.log('[host] 尝试注册房间码:', code);
-  peer = new Peer(code, PEER_CONFIG);
+  currentServerIndex = 0;
+  lastServerSwitchTime = 0;
+  updateServerInfo();
 
+  currentRoomCode = generateRoomCode();
+  console.log('[host] 注册房间:', currentRoomCode);
+
+  if (peer) { try { peer.destroy(); } catch(_){} }
+  peer = createPeerInstance(currentRoomCode);
+  attachHostListeners();
+}
+
+function attachHostListeners() {
   const timeout = setTimeout(() => {
     if (!peer || !peer.open) {
-      setNetStatus('注册超时，请检查网络或换个网络试试', 'err');
+      setNetStatus('注册超时，换个网络试试', 'err');
       document.getElementById('btn-create').disabled = false;
-      toast('连接信令服务器超时，可能需要科学上网或换网络');
     }
   }, 15000);
 
   peer.on('open', (id) => {
     clearTimeout(timeout);
-    console.log('[host] 房间已注册:', id);
+    console.log('[host] 房间注册成功:', id);
+    if (hostOpenedOnce) return;
+    hostOpenedOnce = true;
     setNetStatus(`已注册 · 房间码 ${id}`, 'ok');
     document.getElementById('lobby-screen').classList.add('hidden');
     document.getElementById('waiting-screen').classList.remove('hidden');
     document.getElementById('room-code-display').textContent = id;
-    lobbyPlayers = [{ pid: 0, name: '房主', connected: true }];
+    const name = getNickname();
+    lobbyPlayers = [{ pid: 0, name: name, connected: true }];
     renderLobby();
   });
 
   peer.on('connection', (conn) => {
-    console.log('[host] 收到连接');
     conn.on('open', () => {
       if (lobbyPlayers.length >= 4) {
         conn.send({ type: 'error', msg: '房间已满' });
         setTimeout(() => conn.close(), 500);
         return;
       }
-      const pid = lobbyPlayers.length;
+      // ★ 关键改动：找到第一个空位（不是追加到末尾）
+      let pid = -1;
+      for (let i = 1; i < 4; i++) {
+        if (!lobbyPlayers.find(p => p.pid === i)) { pid = i; break; }
+      }
+      if (pid === -1) { conn.send({ type: 'error', msg: '房间已满' }); conn.close(); return; }
+
       const name = '玩家' + pid;
       lobbyPlayers.push({ pid, name, connected: true, conn });
+      lobbyPlayers.sort((a, b) => a.pid - b.pid); // 保证顺序
       hostConns[pid] = conn;
       conn.send({ type: 'welcome', pid, name, roomPlayers: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
       renderLobby();
       toast(`${name} 加入了房间`);
-      // 广播列表更新
       broadcastLobby();
     });
     conn.on('data', (data) => handleClientData(conn, data));
@@ -972,32 +930,53 @@ function createRoom() {
   });
 
   peer.on('error', (e) => {
-    clearTimeout(timeout);
     console.error('[host] Peer error:', e.type, e);
     if (e.type === 'unavailable-id') {
-      setNetStatus('房间码冲突，重新生成…', 'wait');
-      peer.destroy();
-      setTimeout(createRoom, 300);
-    } else if (e.type === 'network' || e.type === 'server-error') {
-      setNetStatus('信令服务器连接失败，请检查网络', 'err');
-      document.getElementById('btn-create').disabled = false;
-    } else {
-      setNetStatus('连接出错：' + e.type, 'err');
-      document.getElementById('btn-create').disabled = false;
+      clearTimeout(timeout);
+      currentRoomCode = generateRoomCode();
+      if (peer) { try { peer.destroy(); } catch(_){} }
+      setTimeout(() => {
+        peer = createPeerInstance(currentRoomCode);
+        attachHostListeners();
+      }, 300);
+      return;
     }
+    if (SERVER_ERROR_TYPES.includes(e.type)) {
+      if (hostOpenedOnce) {
+        console.log('[host] 已注册成功，忽略服务器抖动');
+        return;
+      }
+      clearTimeout(timeout);
+      trySwitchServer('host');
+      setNetStatus(`切换信令服务器到 ${currentServerName()}…`, 'wait');
+      if (peer) { try { peer.destroy(); } catch(_){} }
+      setTimeout(() => {
+        peer = createPeerInstance(currentRoomCode);
+        attachHostListeners();
+      }, 800);
+      return;
+    }
+    clearTimeout(timeout);
+    setNetStatus('连接出错：' + e.type, 'err');
+    document.getElementById('btn-create').disabled = false;
   });
 
   peer.on('disconnected', () => {
-    console.warn('[host] 与信令服务器断开，尝试重连');
-    peer.reconnect();
+    if (!hostOpenedOnce) return;
+    setTimeout(() => {
+      try {
+        if (peer && !peer.destroyed && peer.disconnected) peer.reconnect();
+      } catch(e){}
+    }, 1500);
   });
 }
 
 function broadcastLobby() {
+  const players = lobbyPlayers.map(p => ({ pid: p.pid, name: p.name }));
   for (const pid in hostConns) {
     const conn = hostConns[pid];
     if (conn && conn.open) {
-      conn.send({ type: 'lobby_update', players: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
+      conn.send({ type: 'lobby_update', players });
     }
   }
 }
@@ -1006,7 +985,7 @@ function renderLobby() {
   const box = document.getElementById('player-list');
   box.innerHTML = '';
   for (let i = 0; i < 4; i++) {
-    const p = lobbyPlayers[i];
+    const p = lobbyPlayers.find(x => x.pid === i);
     const div = document.createElement('div');
     div.className = 'player-item' + (i === 0 ? ' me' : '') + (p ? '' : ' empty');
     if (p) {
@@ -1023,51 +1002,62 @@ function renderLobby() {
 
 function handleClientData(conn, data) {
   if (!data || !data.type) return;
-  // 找对应 pid
   let pid = null;
   for (const id in hostConns) if (hostConns[id] === conn) pid = +id;
   if (pid === null) return;
-
-  if (data.type === 'action') {
-    handleRemoteAction(pid, data.action, data.payload);
-  } else if (data.type === 'modal_response') {
-    handleModalResponse(pid, data.key);
-  } else if (data.type === 'rename') {
+  if (data.type === 'action') handleRemoteAction(pid, data.action, data.payload);
+  else if (data.type === 'modal_response') handleModalResponse(pid, data.key);
+  else if (data.type === 'rename') {
     const lp = lobbyPlayers.find(x => x.pid === pid);
     if (lp) lp.name = data.name;
     if (engine) {
       const p = engine.players.find(x => x.pid === pid);
       if (p) p.name = data.name;
     }
-    renderLobby();
-    broadcastLobby();
+    renderLobby(); broadcastLobby();
     if (engine) broadcastState();
   }
 }
 
+// ★ 关键改动：真正移除断线玩家，让位置变回“等待玩家”
 function handleClientLeave(conn) {
   let pid = null;
   for (const id in hostConns) if (hostConns[id] === conn) pid = +id;
   if (pid === null) return;
+
+  // 从 hostConns 移除
   delete hostConns[pid];
-  const lp = lobbyPlayers.find(p => p.pid === pid);
-  if (lp) lp.connected = false;
+
+  // 从 lobbyPlayers 移除
+  const idx = lobbyPlayers.findIndex(p => p.pid === pid);
+  if (idx >= 0) {
+    const name = lobbyPlayers[idx].name;
+    lobbyPlayers.splice(idx, 1);
+    toast(`${name} 已离开，位置空出`);
+  }
+
+  // 如果游戏进行中，标记该玩家为 offline，让 AI 接管
   if (engine) {
     const p = engine.players.find(x => x.pid === pid);
-    if (p) p.offline = true;
-    broadcastState();
+    if (p) {
+      p.offline = true;
+      broadcastState();
+      // 如果正好轮到该玩家，AI 接管
+      if (engine.current === pid && engine.phase === 'play') {
+        setTimeout(() => aiAct(pid), 500);
+      }
+    }
   }
-  toast(`玩家 ${pid} 断线了`);
+
+  renderLobby();
+  broadcastLobby();
 }
 
 function handleRemoteAction(pid, action, payload) {
   if (!engine) return;
-  if (engine.current !== pid) {
-    sendTo(pid, { type: 'toast', msg: '还没轮到你' });
-    return;
-  }
+  if (engine.current !== pid) { sendTo(pid, { type: 'toast', msg: '还没轮到你' }); return; }
   if (action === 'play') {
-    const cardList = payload.cards.map(c => ({ suit: c.suit, rank: c.rank, value: c.value }));
+    const cardList = payload.cards.map(c => ({ suit: c.suit, rank: c.rank, value: RANK_VALUE[c.rank] }));
     const res = engine.applyPlay(pid, cardList);
     if (!res.ok) sendTo(pid, { type: 'toast', msg: res.msg });
     else { broadcastState(); scheduleNext(); }
@@ -1124,31 +1114,27 @@ function sendTo(pid, data) {
   if (conn && conn.open) conn.send(data);
 }
 
-function hostStartGame() {
+function hostStartGame(mode) {
   if (lobbyPlayers.length !== 4) return;
-  showModeModal(mode => {
-    gameMode = mode;
-    document.getElementById('waiting-screen').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-    document.getElementById('log').classList.remove('hidden');
-    for (const pid in hostConns) {
-      const conn = hostConns[pid];
-      if (conn && conn.open) {
-        conn.send({ type: 'start', mode, players: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
-      }
+  gameMode = mode;
+  document.getElementById('waiting-screen').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  document.getElementById('log').classList.remove('hidden');
+  for (const pid in hostConns) {
+    const conn = hostConns[pid];
+    if (conn && conn.open) {
+      conn.send({ type: 'start', mode, players: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
     }
-    engine = new GameEngine(lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })));
-    engine.players.forEach(p => p.score = 0);
-    newRoundHost();
-  });
+  }
+  engine = new GameEngine(lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })));
+  engine.players.forEach(p => p.score = 0);
+  newRoundHost();
 }
 
 function newRoundHost() {
   engine.deal();
   engine.roundNum++;
   engine.log(`=== 第 ${engine.roundNum} 局（${modeLabel(gameMode)}）===`);
-  if (engine.players[0].redAces > 0) engine.log('🎴 你是红A方');
-  else engine.log('🎴 你是黑A方');
   broadcastState();
   setTimeout(() => startXuanHost(), 400);
 }
@@ -1286,7 +1272,6 @@ function showJoinInput() {
   }
 }
 
-// 规范化输入：转大写、去空格、去分隔符
 function normalizeRoomCode(raw) {
   return String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 }
@@ -1295,33 +1280,36 @@ function joinRoom() {
   const input = document.getElementById('room-code-input');
   const code = normalizeRoomCode(input.value);
   if (code.length < 4) { toast('请输入至少 4 位房间码'); return; }
+  const name = getNickname();
 
   role = 'client';
+  clientOpenedOnce = false;
   document.getElementById('btn-join').disabled = true;
   setNetStatus('正在连接信令服务器…', 'wait');
 
-  // 如果之前有 peer 实例，销毁
-  if (peer) { try { peer.destroy(); } catch(e){} }
-  peer = new Peer(PEER_CONFIG);
+  currentServerIndex = 0;
+  lastServerSwitchTime = 0;
+  updateServerInfo();
+
+  if (peer) { try { peer.destroy(); } catch(_){} }
+  peer = createPeerInstance();
 
   const timeout = setTimeout(() => {
     setNetStatus('连接超时，请重试', 'err');
     document.getElementById('btn-join').disabled = false;
   }, 15000);
 
-  peer.on('open', () => {
-    clearTimeout(timeout);
-    console.log('[client] 已连信令服务器，尝试连房主:', code);
-    setNetStatus(`正在连接房主 ${code}…`, 'wait');
-    clientConn = peer.connect(code, { reliable: true, metadata: { ts: Date.now() } });
-
+  const setupConn = () => {
+    if (!clientOpenedOnce) {
+      clientOpenedOnce = true;
+      setNetStatus(`正在连接房主 ${code}…`, 'wait');
+    }
+    clientConn = peer.connect(code, { reliable: true });
     clientConn.on('open', () => {
       console.log('[client] 与房主连接成功');
-      setNetStatus('已连接房主，等待房主分配位置…', 'ok');
-      const name = prompt('你的昵称：', '玩家' + (1 + Math.floor(Math.random() * 3))) || '玩家';
+      setNetStatus('已连接房主，等待分配位置…', 'ok');
       clientConn.send({ type: 'rename', name });
     });
-
     clientConn.on('data', handleHostData);
     clientConn.on('close', () => {
       setNetStatus('与房主断开连接', 'err');
@@ -1329,25 +1317,47 @@ function joinRoom() {
       document.getElementById('btn-join').disabled = false;
     });
     clientConn.on('error', (e) => {
-      console.error('[client] conn error:', e);
       setNetStatus('连接房主失败：' + e.type, 'err');
       document.getElementById('btn-join').disabled = false;
     });
+  };
+
+  peer.on('open', () => {
+    clearTimeout(timeout);
+    console.log('[client] 信令已连，尝试连房主:', code);
+    if (!clientOpenedOnce) setupConn();
   });
 
   peer.on('error', (e) => {
-    clearTimeout(timeout);
     console.error('[client] Peer error:', e.type, e);
+    if (SERVER_ERROR_TYPES.includes(e.type)) {
+      if (clientConn && clientConn.open) return;
+      const switched = trySwitchServer('client');
+      if (switched) setNetStatus(`切换信令服务器到 ${currentServerName()}…`, 'wait');
+      if (peer) { try { peer.destroy(); } catch(_){} }
+      setTimeout(() => {
+        peer = createPeerInstance();
+        peer.on('open', () => { clearTimeout(timeout); setupConn(); });
+      }, 800);
+      return;
+    }
+    clearTimeout(timeout);
     document.getElementById('btn-join').disabled = false;
     if (e.type === 'peer-unavailable') {
       setNetStatus('房主不在线或房间码错误', 'err');
-      toast('❌ 找不到该房间：\n1) 确认房间码完整无误\n2) 确认房主还没关掉页面\n3) 让房主重新复制一次房间码');
-    } else if (e.type === 'network' || e.type === 'server-error') {
-      setNetStatus('信令服务器连接失败', 'err');
-      toast('无法连接信令服务器，请检查网络（可能需要科学上网）');
+      toast('❌ 找不到该房间：\n1) 确认房间码完整\n2) 确认房主页面还开着\n3) 让房主重新复制房间码');
     } else {
       setNetStatus('连接出错：' + e.type, 'err');
     }
+  });
+
+  peer.on('disconnected', () => {
+    if (!clientOpenedOnce) return;
+    setTimeout(() => {
+      try {
+        if (peer && !peer.destroyed && peer.disconnected) peer.reconnect();
+      } catch(e){}
+    }, 1500);
   });
 }
 
@@ -1394,7 +1404,7 @@ function renderClientLobby(players) {
   const box = document.getElementById('player-list');
   box.innerHTML = '';
   for (let i = 0; i < 4; i++) {
-    const p = players[i];
+    const p = players.find(x => x.pid === i);
     const div = document.createElement('div');
     div.className = 'player-item' + (p && p.pid === myPid ? ' me' : '') + (p ? '' : ' empty');
     if (p) {
@@ -1414,12 +1424,17 @@ function sendClientAction(action, payload) {
 // ============================================================
 // 模式选择
 // ============================================================
-function showModeModal(callback) {
+function showModeSelect() {
   showModal('选择模式', '标准：需队友同意才能宣\n天宣：发牌后自动宣\n有宣必跟：点击即宣成功', [
-    { text: '标准', primary: true, onclick: () => { hideModal(); callback('standard'); }},
-    { text: '天宣', onclick: () => { hideModal(); callback('tianxuan'); }},
-    { text: '有宣必跟', onclick: () => { hideModal(); callback('youxuan'); }},
+    { text: '标准', primary: true, onclick: () => { hideModal(); hostStartGame('standard'); }},
+    { text: '天宣', onclick: () => { hideModal(); hostStartGame('tianxuan'); }},
+    { text: '有宣必跟', onclick: () => { hideModal(); hostStartGame('youxuan'); }},
   ]);
+}
+
+function getNickname() {
+  const input = document.getElementById('nickname-input');
+  return (input.value.trim() || '玩家').slice(0, 12);
 }
 
 // ============================================================
@@ -1550,7 +1565,7 @@ function humanPlay() {
     if (!res.ok) { flashStatus('❌ ' + res.msg, 'error'); return; }
     broadcastState(); scheduleNext();
   } else {
-    sendClientAction('play', { cards: chosen });
+    sendClientAction('play', { cards: chosen.map(c => ({ suit: c.suit, rank: c.rank })) });
   }
 }
 
@@ -1664,6 +1679,8 @@ document.getElementById('room-code-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') joinRoom();
 });
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+updateServerInfo();
 </script>
 </body>
 </html>
