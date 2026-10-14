@@ -427,11 +427,31 @@ let currentServerIndex = 0;
 let lastServerSwitchTime = 0;
 const MIN_SWITCH_INTERVAL = 5000;
 
+// ★ 加了 TURN 中继服务器，P2P 打不通时走中转
 const BASE_ICE_CONFIG = {
   iceServers: [
+    // STUN：优先尝试直连
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-  ]
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    // TURN：直连失败时中继（Metered 免费公共 TURN）
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+  ],
+  iceTransportPolicy: 'all', // 先用直连，不行再走 TURN
 };
 
 function currentServerName() { return SERVER_LIST[currentServerIndex].host; }
@@ -902,13 +922,15 @@ function attachHostListeners() {
   });
 
   peer.on('connection', (conn) => {
+    console.log('[host] 收到连接，peer:', conn.peer);
+    // 记录 conn 的一些信息帮助排查
     conn.on('open', () => {
+      console.log('[host] conn 打开成功');
       if (lobbyPlayers.length >= 4) {
         conn.send({ type: 'error', msg: '房间已满' });
         setTimeout(() => conn.close(), 500);
         return;
       }
-      // ★ 关键改动：找到第一个空位（不是追加到末尾）
       let pid = -1;
       for (let i = 1; i < 4; i++) {
         if (!lobbyPlayers.find(p => p.pid === i)) { pid = i; break; }
@@ -917,7 +939,7 @@ function attachHostListeners() {
 
       const name = '玩家' + pid;
       lobbyPlayers.push({ pid, name, connected: true, conn });
-      lobbyPlayers.sort((a, b) => a.pid - b.pid); // 保证顺序
+      lobbyPlayers.sort((a, b) => a.pid - b.pid);
       hostConns[pid] = conn;
       conn.send({ type: 'welcome', pid, name, roomPlayers: lobbyPlayers.map(p => ({ pid: p.pid, name: p.name })) });
       renderLobby();
@@ -925,7 +947,10 @@ function attachHostListeners() {
       broadcastLobby();
     });
     conn.on('data', (data) => handleClientData(conn, data));
-    conn.on('close', () => handleClientLeave(conn));
+    conn.on('close', () => {
+      console.log('[host] conn 关闭');
+      handleClientLeave(conn);
+    });
     conn.on('error', (e) => console.warn('[host] conn error', e));
   });
 
@@ -1019,36 +1044,27 @@ function handleClientData(conn, data) {
   }
 }
 
-// ★ 关键改动：真正移除断线玩家，让位置变回“等待玩家”
 function handleClientLeave(conn) {
   let pid = null;
   for (const id in hostConns) if (hostConns[id] === conn) pid = +id;
   if (pid === null) return;
-
-  // 从 hostConns 移除
   delete hostConns[pid];
-
-  // 从 lobbyPlayers 移除
   const idx = lobbyPlayers.findIndex(p => p.pid === pid);
   if (idx >= 0) {
     const name = lobbyPlayers[idx].name;
     lobbyPlayers.splice(idx, 1);
     toast(`${name} 已离开，位置空出`);
   }
-
-  // 如果游戏进行中，标记该玩家为 offline，让 AI 接管
   if (engine) {
     const p = engine.players.find(x => x.pid === pid);
     if (p) {
       p.offline = true;
       broadcastState();
-      // 如果正好轮到该玩家，AI 接管
       if (engine.current === pid && engine.phase === 'play') {
         setTimeout(() => aiAct(pid), 500);
       }
     }
   }
-
   renderLobby();
   broadcastLobby();
 }
@@ -1304,20 +1320,38 @@ function joinRoom() {
       clientOpenedOnce = true;
       setNetStatus(`正在连接房主 ${code}…`, 'wait');
     }
+    console.log('[client] 开始连接到房主:', code);
     clientConn = peer.connect(code, { reliable: true });
+
+    // ★ 加超时：15 秒还没打开就提示
+    const connTimeout = setTimeout(() => {
+      if (clientConn && !clientConn.open) {
+        console.warn('[client] 与房主连接超时');
+        setNetStatus('连接房主超时，可能网络不通', 'err');
+        toast('❌ 连接房主超时\n可能原因：\n1) 双方不在同一网络\n2) 路由器/防火墙阻挡\n3) 试试关闭 Chrome 的 mDNS 保护');
+        try { clientConn.close(); } catch(_){}
+        document.getElementById('btn-join').disabled = false;
+      }
+    }, 15000);
+
     clientConn.on('open', () => {
+      clearTimeout(connTimeout);
       console.log('[client] 与房主连接成功');
       setNetStatus('已连接房主，等待分配位置…', 'ok');
       clientConn.send({ type: 'rename', name });
     });
     clientConn.on('data', handleHostData);
     clientConn.on('close', () => {
+      clearTimeout(connTimeout);
+      console.warn('[client] 与房主连接关闭');
       setNetStatus('与房主断开连接', 'err');
       toast('与房主断开连接');
       document.getElementById('btn-join').disabled = false;
     });
     clientConn.on('error', (e) => {
-      setNetStatus('连接房主失败：' + e.type, 'err');
+      clearTimeout(connTimeout);
+      console.error('[client] conn error:', e);
+      setNetStatus('连接房主失败：' + (e.type || e.message || '未知'), 'err');
       document.getElementById('btn-join').disabled = false;
     });
   };
